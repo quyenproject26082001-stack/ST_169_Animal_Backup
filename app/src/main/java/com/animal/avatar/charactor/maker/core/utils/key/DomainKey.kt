@@ -1,9 +1,9 @@
 package com.animal.avatar.charactor.maker.core.utils.key
 
 object DomainKey {
-    const val BASE_URL = "https://lvtglobal.tech"
+    const val BASE_URL = "https://lvtglobal.site"
     const val BASE_URL_PREVENTIVE = "https://lvtglobal.site"
-    const val SUB_DOMAIN = "/public/app/ST193_PixelMaker"
+    const val SUB_DOMAIN = "/public/app/ST169_AnimalOcMaker"
     const val HTTP = "https://"
 
     const val AVATAR_CHARACTER_API = "avatar.png"
