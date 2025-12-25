@@ -208,12 +208,30 @@ class CustomizeCharacterViewModel : ViewModel() {
     //  Item Nav / Layer
     suspend fun addValueToItemNavList() {
         itemNavList.clear()
+
+        // 🔍 LOG: Start creating item lists for API data
+        if (_isDataAPI.value) {
+            Log.d("API_ITEMS_VM", "========== CREATING ITEM NAV LIST ==========")
+            Log.d("API_ITEMS_VM", "Total categories to process: ${_dataCustomize.value!!.layerList.size}")
+        }
+
         _dataCustomize.value!!.layerList.forEachIndexed { index, layer ->
-            if (index == 0) {
-                itemNavList.add(createListItem(layer, true))
+            val items = if (index == 0) {
+                createListItem(layer, true)
             } else {
-                itemNavList.add(createListItem(layer))
+                createListItem(layer)
             }
+            itemNavList.add(items)
+
+            // 🔍 LOG: Items created for each category
+            if (_isDataAPI.value) {
+                Log.d("API_ITEMS_VM", "Category $index: Created ${items.size} items (including NONE/RANDOM)")
+            }
+        }
+
+        if (_isDataAPI.value) {
+            Log.d("API_ITEMS_VM", "Total itemNavList size: ${itemNavList.size}")
+            Log.d("API_ITEMS_VM", "===========================================")
         }
     }
 
@@ -510,6 +528,13 @@ class CustomizeCharacterViewModel : ViewModel() {
         val listItem = arrayListOf<ItemNavCustomModel>()
         val positionCustom = layers.positionCustom
         val positionNavigation = layers.positionNavigation
+
+        // 🔍 LOG: Category info
+        if (_isDataAPI.value) {
+            Log.d("API_ITEMS_CREATE", "▶ Creating items for category - Custom:$positionCustom Nav:$positionNavigation IsBody:$isBody")
+            Log.d("API_ITEMS_CREATE", "  Raw layer count: ${layers.layer.size}")
+        }
+
         if (isBody) {
             listItem.add(
                 ItemNavCustomModel(
@@ -535,6 +560,8 @@ class CustomizeCharacterViewModel : ViewModel() {
                 )
             )
         }
+
+        var itemCounter = 0
         for (layer in layers.layer) {
             if (!layer.isMoreColors) {
                 listItem.add(
@@ -542,6 +569,10 @@ class CustomizeCharacterViewModel : ViewModel() {
                         path = layer.image, positionCustom = positionCustom, positionNavigation = positionNavigation
                     )
                 )
+                // 🔍 LOG: Simple item
+                if (_isDataAPI.value) {
+                    Log.d("API_ITEMS_CREATE", "    [$itemCounter] Simple item: ${layer.image}")
+                }
             } else {
                 val listItemColor = ArrayList<ItemColorImageModel>()
 
@@ -561,8 +592,21 @@ class CustomizeCharacterViewModel : ViewModel() {
                         listImageColor = listItemColor,
                     )
                 )
+                // 🔍 LOG: Item with colors
+                if (_isDataAPI.value) {
+                    Log.d("API_ITEMS_CREATE", "    [$itemCounter] Item with ${listItemColor.size} colors: ${layer.image}")
+                    listItemColor.forEachIndexed { colorIdx, colorItem ->
+                        Log.d("API_ITEMS_CREATE", "        Color $colorIdx: ${colorItem.color}")
+                    }
+                }
             }
+            itemCounter++
         }
+
+        if (_isDataAPI.value) {
+            Log.d("API_ITEMS_CREATE", "  ✓ Total items created: ${listItem.size}")
+        }
+
         return listItem
     }
 

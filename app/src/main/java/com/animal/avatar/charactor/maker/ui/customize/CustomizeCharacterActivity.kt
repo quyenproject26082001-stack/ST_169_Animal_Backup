@@ -1,6 +1,7 @@
 package com.animal.avatar.charactor.maker.ui.customize
 
 import android.annotation.SuppressLint
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowManager
@@ -84,6 +85,34 @@ class CustomizeCharacterActivity : BaseActivity<ActivityCustomizeBinding>() {
                             intent.getIntExtra(IntentKey.STATUS_FROM_KEY, ValueKey.CREATE)
                         viewModel.setDataCustomize(list[viewModel.positionSelected])
                         viewModel.setIsDataAPI(list[viewModel.positionSelected].isFromAPI)
+
+                        // 🔍 LOG API DATA
+                        if (list[viewModel.positionSelected].isFromAPI) {
+                            Log.d("API_ITEMS", "========== DATA FROM API ==========")
+                            Log.d("API_ITEMS", "Total categories: ${list[viewModel.positionSelected].layerList.size}")
+                            list[viewModel.positionSelected].layerList.forEachIndexed { categoryIndex, layerList ->
+                                Log.d("API_ITEMS", "")
+                                Log.d("API_ITEMS", "--- Category $categoryIndex ---")
+                                Log.d("API_ITEMS", "Navigation Image: ${layerList.imageNavigation}")
+                                Log.d("API_ITEMS", "Position Custom: ${layerList.positionCustom}")
+                                Log.d("API_ITEMS", "Position Navigation: ${layerList.positionNavigation}")
+                                Log.d("API_ITEMS", "Total items in category: ${layerList.layer.size}")
+
+                                layerList.layer.forEachIndexed { itemIndex, layer ->
+                                    Log.d("API_ITEMS", "  Item $itemIndex:")
+                                    Log.d("API_ITEMS", "    - Image Path: ${layer.image}")
+                                    Log.d("API_ITEMS", "    - Has Colors: ${layer.isMoreColors}")
+                                    if (layer.isMoreColors && layer.listColor.isNotEmpty()) {
+                                        Log.d("API_ITEMS", "    - Color Count: ${layer.listColor.size}")
+                                        layer.listColor.forEachIndexed { colorIndex, colorModel ->
+                                            Log.d("API_ITEMS", "      Color $colorIndex: ${colorModel.color} -> ${colorModel.path}")
+                                        }
+                                    }
+                                }
+                            }
+                            Log.d("API_ITEMS", "===================================")
+                        }
+
                         initData()
                     }
                 }
