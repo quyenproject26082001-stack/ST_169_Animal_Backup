@@ -423,7 +423,9 @@ class ViewActivity : BaseActivity<ActivityViewBinding>() {
     }
 
     private fun handleBack() {
-        resetMyCreationSelectionMode()
+        if (viewModel.typeUI.value == ValueKey.TYPE_VIEW) {
+            resetMyCreationSelectionMode()
+        }
         handleBackLeftToRight()
     }
 

@@ -1,5 +1,6 @@
 package com.animal.avatar.charactor.maker.ui.choose_character
 
+import android.os.Bundle
 import android.view.LayoutInflater
 import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -114,14 +115,20 @@ class ChooseCharacterActivity : BaseActivity<ActivityChooseCharacterBinding>() {
             actionBar.btnActionBarLeft.tap { showInterAll { handleBackLeftToRight() } }
         }
         chooseCharacterAdapter.onItemClick = { position ->
-            AdmobEvent.logEvent(this@ChooseCharacterActivity, "click_item_$position", null)
-
-            android.util.Log.d("ChooseCharacter", "========================================")
-            android.util.Log.d("ChooseCharacter", "Item clicked: position $position")
-
             // ✅ FIX: Use isFromAPI flag from character data instead of position
             val selectedCharacter = dataViewModel.allData.value.getOrNull(position)
             val needsInternet = selectedCharacter?.isFromAPI ?: false
+
+            // Log AdMob event with detailed information
+            val bundle = Bundle()
+            bundle.putString("character_name", selectedCharacter?.dataName ?: "unknown")
+            bundle.putString("avatar_path", selectedCharacter?.avatar ?: "unknown")
+            bundle.putInt("position", position)
+            bundle.putBoolean("is_from_api", needsInternet)
+            AdmobEvent.logEvent(this@ChooseCharacterActivity, "click_character_item", bundle)
+
+            android.util.Log.d("ChooseCharacter", "========================================")
+            android.util.Log.d("ChooseCharacter", "Item clicked: position $position")
 
             android.util.Log.d("ChooseCharacter", "Character isFromAPI: $needsInternet")
             android.util.Log.d("ChooseCharacter", "Character name: ${selectedCharacter?.dataName}")
