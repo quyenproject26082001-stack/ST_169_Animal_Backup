@@ -208,30 +208,12 @@ class CustomizeCharacterViewModel : ViewModel() {
     //  Item Nav / Layer
     suspend fun addValueToItemNavList() {
         itemNavList.clear()
-
-        // 🔍 LOG: Start creating item lists for API data
-        if (_isDataAPI.value) {
-            Log.d("API_ITEMS_VM", "========== CREATING ITEM NAV LIST ==========")
-            Log.d("API_ITEMS_VM", "Total categories to process: ${_dataCustomize.value!!.layerList.size}")
-        }
-
         _dataCustomize.value!!.layerList.forEachIndexed { index, layer ->
-            val items = if (index == 0) {
-                createListItem(layer, true)
+            if (index == 0) {
+                itemNavList.add(createListItem(layer, true))
             } else {
-                createListItem(layer)
+                itemNavList.add(createListItem(layer))
             }
-            itemNavList.add(items)
-
-            // 🔍 LOG: Items created for each category
-            if (_isDataAPI.value) {
-                Log.d("API_ITEMS_VM", "Category $index: Created ${items.size} items (including NONE/RANDOM)")
-            }
-        }
-
-        if (_isDataAPI.value) {
-            Log.d("API_ITEMS_VM", "Total itemNavList size: ${itemNavList.size}")
-            Log.d("API_ITEMS_VM", "===========================================")
         }
     }
 
@@ -257,12 +239,27 @@ class CustomizeCharacterViewModel : ViewModel() {
     }
 
     suspend fun setClickFillLayer(item: ItemNavCustomModel, position: Int): String {
+        // Validate positionNavSelected bounds
+        if (positionNavSelected < 0 || positionNavSelected >= positionColorItemList.size) {
+            Log.e("CustomizeViewModel", "setClickFillLayer - Index out of bounds! positionNavSelected: $positionNavSelected, positionColorItemList.size: ${positionColorItemList.size}")
+            // Reset to safe value
+            positionNavSelected = 0.coerceAtMost(positionColorItemList.size - 1).coerceAtLeast(0)
+            Log.e("CustomizeViewModel", "Reset positionNavSelected to: $positionNavSelected")
+        }
+
         val path = item.path
         setKeySelected(positionNavSelected, path)
         val pathSelected = if (item.listImageColor.isEmpty()) {
             path
         } else {
-            item.listImageColor[positionColorItemList[positionNavSelected]].path
+            // Double-check bounds before accessing
+            val colorIndex = positionColorItemList.getOrElse(positionNavSelected) { 0 }
+            if (colorIndex >= 0 && colorIndex < item.listImageColor.size) {
+                item.listImageColor[colorIndex].path
+            } else {
+                Log.e("CustomizeViewModel", "Color index out of bounds! colorIndex: $colorIndex, listImageColor.size: ${item.listImageColor.size}")
+                item.listImageColor.firstOrNull()?.path ?: path
+            }
         }
         setIsSelectedItem(positionNavSelected)
         setPathSelected(positionCustom, path)
@@ -271,6 +268,12 @@ class CustomizeCharacterViewModel : ViewModel() {
     }
 
     suspend fun setClickRandomLayer(): Pair<String, Boolean> {
+        // Validate positionNavSelected bounds
+        if (positionNavSelected < 0 || positionNavSelected >= itemNavList.size) {
+            Log.e("CustomizeViewModel", "setClickRandomLayer - positionNavSelected out of bounds! positionNavSelected: $positionNavSelected, itemNavList.size: ${itemNavList.size}")
+            positionNavSelected = 0.coerceAtMost(itemNavList.size - 1).coerceAtLeast(0)
+        }
+
         val positionStartLayer = if (positionNavSelected == 0) 1 else 2
         val randomLayer = if (positionNavSelected == 0) {
             if (itemNavList[positionNavSelected].size == 1) {
@@ -414,6 +417,12 @@ class CustomizeCharacterViewModel : ViewModel() {
     }
 
     suspend fun setClickChangeColor(position: Int): String {
+        // Validate positionNavSelected bounds
+        if (positionNavSelected < 0 || positionNavSelected >= positionColorItemList.size) {
+            Log.e("CustomizeViewModel", "setClickChangeColor - positionNavSelected out of bounds! positionNavSelected: $positionNavSelected, positionColorItemList.size: ${positionColorItemList.size}")
+            return ""
+        }
+
         var pathColor = ""
         positionColorItemList[positionNavSelected] = position
 
@@ -465,8 +474,8 @@ class CustomizeCharacterViewModel : ViewModel() {
         // Check xem layer có items màu không
         val hasColorItems = currentList.any {
             it.listImageColor.isNotEmpty() &&
-            it.path != AssetsKey.NONE_LAYER &&
-            it.path != AssetsKey.RANDOM_LAYER
+                    it.path != AssetsKey.NONE_LAYER &&
+                    it.path != AssetsKey.RANDOM_LAYER
         }
         if (!hasColorItems) return
 
@@ -528,13 +537,6 @@ class CustomizeCharacterViewModel : ViewModel() {
         val listItem = arrayListOf<ItemNavCustomModel>()
         val positionCustom = layers.positionCustom
         val positionNavigation = layers.positionNavigation
-
-        // 🔍 LOG: Category info
-        if (_isDataAPI.value) {
-            Log.d("API_ITEMS_CREATE", "▶ Creating items for category - Custom:$positionCustom Nav:$positionNavigation IsBody:$isBody")
-            Log.d("API_ITEMS_CREATE", "  Raw layer count: ${layers.layer.size}")
-        }
-
         if (isBody) {
             listItem.add(
                 ItemNavCustomModel(
@@ -560,8 +562,6 @@ class CustomizeCharacterViewModel : ViewModel() {
                 )
             )
         }
-
-        var itemCounter = 0
         for (layer in layers.layer) {
             if (!layer.isMoreColors) {
                 listItem.add(
@@ -569,10 +569,6 @@ class CustomizeCharacterViewModel : ViewModel() {
                         path = layer.image, positionCustom = positionCustom, positionNavigation = positionNavigation
                     )
                 )
-                // 🔍 LOG: Simple item
-                if (_isDataAPI.value) {
-                    Log.d("API_ITEMS_CREATE", "    [$itemCounter] Simple item: ${layer.image}")
-                }
             } else {
                 val listItemColor = ArrayList<ItemColorImageModel>()
 
@@ -592,21 +588,8 @@ class CustomizeCharacterViewModel : ViewModel() {
                         listImageColor = listItemColor,
                     )
                 )
-                // 🔍 LOG: Item with colors
-                if (_isDataAPI.value) {
-                    Log.d("API_ITEMS_CREATE", "    [$itemCounter] Item with ${listItemColor.size} colors: ${layer.image}")
-                    listItemColor.forEachIndexed { colorIdx, colorItem ->
-                        Log.d("API_ITEMS_CREATE", "        Color $colorIdx: ${colorItem.color}")
-                    }
-                }
             }
-            itemCounter++
         }
-
-        if (_isDataAPI.value) {
-            Log.d("API_ITEMS_CREATE", "  ✓ Total items created: ${listItem.size}")
-        }
-
         return listItem
     }
 
@@ -647,6 +630,8 @@ class CustomizeCharacterViewModel : ViewModel() {
 
     suspend fun resetDataList() {
         val quantityLayer = _dataCustomize.value!!.layerList.size
+        Log.d("CustomizeViewModel", "resetDataList - quantityLayer: $quantityLayer")
+
         val positionColorItemList = ArrayList<Int>(quantityLayer)
         val isSelectedItemList = ArrayList<Boolean>(quantityLayer)
         val keySelectedItemList = ArrayList<String>(quantityLayer)
@@ -666,6 +651,8 @@ class CustomizeCharacterViewModel : ViewModel() {
         updateKeySelectedItemList(keySelectedItemList)
         updateIsShowColorList(isShowColorList)
         updatePathSelectedList(pathSelectedList)
+
+        Log.d("CustomizeViewModel", "resetDataList completed - All lists initialized with size: $quantityLayer")
     }
 
     fun getSuggestionList(): SuggestionModel {
@@ -682,13 +669,92 @@ class CustomizeCharacterViewModel : ViewModel() {
     }
 
     fun fillSuggestionToCustomize() {
-        updatePositionColorItemList(suggestionModel.positionColorItemList)
+        // Validate and fix list sizes to match current data structure
+        val expectedSize = _dataCustomize.value?.layerList?.size ?: 0
+
+        Log.d("CustomizeViewModel", "fillSuggestionToCustomize - Expected size: $expectedSize")
+        Log.d("CustomizeViewModel", "Loaded positionColorItemList size: ${suggestionModel.positionColorItemList.size}")
+
+        // Fix positionColorItemList size
+        val fixedPositionColorItemList = validateListSize(
+            suggestionModel.positionColorItemList,
+            expectedSize,
+            "positionColorItemList"
+        ) { 0 }
+
+        // Fix isSelectedItemList size
+        val fixedIsSelectedItemList = validateListSize(
+            suggestionModel.isSelectedItemList,
+            expectedSize,
+            "isSelectedItemList"
+        ) { false }
+
+        // Fix keySelectedItemList size
+        val fixedKeySelectedItemList = validateListSize(
+            suggestionModel.keySelectedItemList,
+            expectedSize,
+            "keySelectedItemList"
+        ) { "" }
+
+        // Fix isShowColorList size
+        val fixedIsShowColorList = validateListSize(
+            suggestionModel.isShowColorList,
+            expectedSize,
+            "isShowColorList"
+        ) { true }
+
+        // Fix pathSelectedList size
+        val fixedPathSelectedList = validateListSize(
+            suggestionModel.pathSelectedList,
+            expectedSize,
+            "pathSelectedList"
+        ) { "" }
+
+        updatePositionColorItemList(fixedPositionColorItemList)
         updateItemNavList(suggestionModel.itemNavList)
         updateColorNavList(suggestionModel.colorItemNavList)
-        updateIsSelectedItemList(suggestionModel.isSelectedItemList)
-        updateKeySelectedItemList(suggestionModel.keySelectedItemList)
-        updateIsShowColorList(suggestionModel.isShowColorList)
-        updatePathSelectedList(suggestionModel.pathSelectedList)
+        updateIsSelectedItemList(fixedIsSelectedItemList)
+        updateKeySelectedItemList(fixedKeySelectedItemList)
+        updateIsShowColorList(fixedIsShowColorList)
+        updatePathSelectedList(fixedPathSelectedList)
+    }
+
+    private fun <T> validateListSize(
+        list: ArrayList<T>,
+        expectedSize: Int,
+        listName: String,
+        defaultValue: () -> T
+    ): ArrayList<T> {
+        val result = ArrayList(list)
+        val actualSize = result.size
+
+        if (actualSize != expectedSize) {
+            Log.w("CustomizeViewModel", "$listName size mismatch! Expected: $expectedSize, Actual: $actualSize")
+
+            when {
+                actualSize < expectedSize -> {
+                    // Add missing elements
+                    val itemsToAdd = expectedSize - actualSize
+                    Log.w("CustomizeViewModel", "Adding $itemsToAdd default items to $listName")
+                    repeat(itemsToAdd) {
+                        result.add(defaultValue())
+                    }
+                }
+                actualSize > expectedSize -> {
+                    // Remove extra elements
+                    val itemsToRemove = actualSize - expectedSize
+                    Log.w("CustomizeViewModel", "Removing $itemsToRemove extra items from $listName")
+                    repeat(itemsToRemove) {
+                        if (result.size > expectedSize) {
+                            result.removeAt(result.size - 1)
+                        }
+                    }
+                }
+            }
+            Log.d("CustomizeViewModel", "$listName fixed. New size: ${result.size}")
+        }
+
+        return result
     }
 
     suspend fun updateEditCharacter(context: Context, pathInternal: String) {

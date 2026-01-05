@@ -11,9 +11,9 @@
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 1,
-      "versionName": "1.0.0",
-      "outputFile": "ST169_Animal_Maker_v1.0.0_11.04.2025-release.apk"
+      "versionCode": 5,
+      "versionName": "1.0.4",
+      "outputFile": "ST169_Animal_Maker_v1.0.4_01.05.2026-release.apk"
     }
   ],
   "elementType": "File",
@@ -22,14 +22,14 @@
       "minApi": 28,
       "maxApi": 30,
       "baselineProfiles": [
-        "baselineProfiles/1/ST169_Animal_Maker_v1.0.0_11.04.2025-release.dm"
+        "baselineProfiles/1/ST169_Animal_Maker_v1.0.4_01.05.2026-release.dm"
       ]
     },
     {
       "minApi": 31,
       "maxApi": 2147483647,
       "baselineProfiles": [
-        "baselineProfiles/0/ST169_Animal_Maker_v1.0.0_11.04.2025-release.dm"
+        "baselineProfiles/0/ST169_Animal_Maker_v1.0.4_01.05.2026-release.dm"
       ]
     }
   ],
