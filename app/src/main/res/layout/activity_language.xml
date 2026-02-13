@@ -33,7 +33,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/layoutActionBar">
+        app:layout_constraintBottom_toBottomOf="parent"
+        >
 
         <include layout="@layout/ads_native_big_btn_bottom_shimmer" />
 
@@ -48,10 +49,11 @@
         android:orientation="vertical"
         android:overScrollMode="never"
         android:paddingHorizontal="16dp"
+        android:layout_marginBottom="3dp"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/native_ads"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/native_ads"
+        app:layout_constraintTop_toBottomOf="@id/layoutActionBar"
         tools:listitem="@layout/item_language" />
 </androidx.constraintlayout.widget.ConstraintLayout>
