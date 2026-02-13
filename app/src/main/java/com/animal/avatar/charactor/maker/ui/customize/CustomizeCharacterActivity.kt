@@ -83,6 +83,15 @@ class CustomizeCharacterActivity : BaseActivity<ActivityCustomizeBinding>() {
                         viewModel.positionSelected = intent.getIntExtra(IntentKey.INTENT_KEY, 0)
                         viewModel.statusFrom =
                             intent.getIntExtra(IntentKey.STATUS_FROM_KEY, ValueKey.CREATE)
+
+                        Log.d("CustomizeCharacter", "🔍 FIX APPLIED! Position: ${viewModel.positionSelected}, List size: ${list.size}")
+
+                        // ✅ Check bounds before accessing list (both negative and out of bounds)
+                        if (viewModel.positionSelected < 0 || viewModel.positionSelected >= list.size) {
+                            Log.e("CustomizeCharacter", "❌ Invalid position: ${viewModel.positionSelected}, list size: ${list.size}. Resetting to 0.")
+                            viewModel.positionSelected = 0
+                        }
+
                         viewModel.setDataCustomize(list[viewModel.positionSelected])
                         viewModel.setIsDataAPI(list[viewModel.positionSelected].isFromAPI)
 

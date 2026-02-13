@@ -423,6 +423,12 @@ class ViewActivity : BaseActivity<ActivityViewBinding>() {
     }
 
     private fun handleBack() {
+        // ✅ Check if activity is still valid before proceeding
+        if (isDestroyed || isFinishing) {
+            android.util.Log.w("ViewActivity", "handleBack called but activity is destroyed/finishing - skipping")
+            return
+        }
+
         if (viewModel.typeUI.value == ValueKey.TYPE_VIEW) {
             resetMyCreationSelectionMode()
         }
@@ -430,9 +436,15 @@ class ViewActivity : BaseActivity<ActivityViewBinding>() {
     }
 
     private fun resetMyCreationSelectionMode() {
+        // ✅ Check if activity is still valid
+        if (isDestroyed || isFinishing) {
+            android.util.Log.w("ViewActivity", "resetMyCreationSelectionMode called but activity is destroyed/finishing")
+            return
+        }
+
         // Reset selection mode in MyCreationActivity before going back
         val myCreationActivity = MyCreationActivity.getInstance()
-        if (myCreationActivity != null) {
+        if (myCreationActivity != null && !myCreationActivity.isDestroyed && !myCreationActivity.isFinishing) {
             android.util.Log.d("ViewActivity", "Resetting selection mode in MyCreationActivity")
 
             // Reset the fragment's selection state first
@@ -465,6 +477,13 @@ class ViewActivity : BaseActivity<ActivityViewBinding>() {
 
             withContext(Dispatchers.Main) {
                 dismissLoading()
+
+                // ✅ Check if character was found before launching edit
+                if (myAvatarViewModel.positionCharacter < 0) {
+                    android.util.Log.e("ViewActivity", "❌ Character not found for edit, position: ${myAvatarViewModel.positionCharacter}")
+                    showToast(R.string.an_error_occurred)
+                    return@withContext
+                }
 
                 myAvatarViewModel.checkDataInternet(this@ViewActivity) {
                     val intent =

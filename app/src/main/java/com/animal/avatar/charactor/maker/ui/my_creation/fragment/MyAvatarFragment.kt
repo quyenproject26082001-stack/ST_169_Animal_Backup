@@ -181,6 +181,14 @@ class MyAvatarFragment : BaseFragment<FragmentMyAvatarBinding>() {
             viewModel.editItem(myAlbumActivity, pathInternal, dataViewModel.allData.value)
             withContext(Dispatchers.Main) {
                 myAlbumActivity.dismissLoading()
+
+                // ✅ Check if character was found before launching edit
+                if (viewModel.positionCharacter < 0) {
+                    android.util.Log.e("MyAvatarFragment", "❌ Character not found for edit, position: ${viewModel.positionCharacter}")
+                    myAlbumActivity.showToast(R.string.an_error_occurred)
+                    return@withContext
+                }
+
                 viewModel.checkDataInternet(myAlbumActivity) {
                     val intent = Intent(myAlbumActivity, CustomizeCharacterActivity::class.java)
                     intent.putExtra(IntentKey.INTENT_KEY, viewModel.positionCharacter)

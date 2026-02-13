@@ -539,6 +539,12 @@ class MyCreationActivity : WhatsappSharingActivity<ActivityAlbumBinding>() {
     }
 
     fun enterSelectionMode() {
+        // ✅ Check if activity is destroyed before accessing binding
+        if (isDestroyed || isFinishing) {
+            android.util.Log.w("MyCreationActivity", "enterSelectionMode called but activity is destroyed/finishing - skipping")
+            return
+        }
+
         isInSelectionMode = true
         isAllSelected = false
         binding.actionBar.apply {
@@ -552,6 +558,12 @@ class MyCreationActivity : WhatsappSharingActivity<ActivityAlbumBinding>() {
     }
 
     fun exitSelectionMode() {
+        // ✅ Check if activity is destroyed before accessing binding
+        if (isDestroyed || isFinishing) {
+            android.util.Log.w("MyCreationActivity", "exitSelectionMode called but activity is destroyed/finishing - skipping")
+            return
+        }
+
         isInSelectionMode = false
         isAllSelected = false
         binding.actionBar.apply {
@@ -565,6 +577,12 @@ class MyCreationActivity : WhatsappSharingActivity<ActivityAlbumBinding>() {
     }
 
     private fun updateBottomButtonsVisibility() {
+        // ✅ Check if activity is destroyed before accessing binding
+        if (isDestroyed || isFinishing) {
+            android.util.Log.w("MyCreationActivity", "updateBottomButtonsVisibility called but activity is destroyed/finishing")
+            return
+        }
+
         val layoutBottom = binding.lnlBottom.getChildAt(0)
         val btnWhatsapp = layoutBottom.findViewById<View>(R.id.btnWhatsapp)
         val btnTelegram = layoutBottom.findViewById<View>(R.id.btnTelegram)
@@ -664,6 +682,12 @@ class MyCreationActivity : WhatsappSharingActivity<ActivityAlbumBinding>() {
 
     // Public method to update select all icon based on selection state
     fun updateSelectAllIcon(allSelected: Boolean) {
+        // ✅ Check if activity is destroyed before accessing binding
+        if (isDestroyed || isFinishing) {
+            android.util.Log.w("MyCreationActivity", "updateSelectAllIcon called but activity is destroyed/finishing")
+            return
+        }
+
         isAllSelected = allSelected
         if (allSelected) {
             binding.actionBar.btnActionBarRight.setImageResource(R.drawable.ic_select_all)

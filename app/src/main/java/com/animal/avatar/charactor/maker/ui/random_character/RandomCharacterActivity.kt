@@ -134,6 +134,13 @@ class RandomCharacterActivity : BaseActivity<ActivityRandomCharacterBinding>() {
                         dLog("---------- Processing Character $i ----------")
                         val currentData = filteredData[i]
                         customizeCharacterViewModel.positionSelected = dataViewModel.allData.value.indexOf(currentData)
+
+                        // ✅ Check if character was found in allData
+                        if (customizeCharacterViewModel.positionSelected < 0) {
+                            eLog("❌ Character not found in allData: ${currentData.dataName}, skipping")
+                            continue
+                        }
+
                         dLog("Character name: ${currentData.dataName}")
                         dLog("Avatar path: ${currentData.avatar}")
                         dLog("Layer count: ${currentData.layerList.size}")
@@ -208,6 +215,14 @@ class RandomCharacterActivity : BaseActivity<ActivityRandomCharacterBinding>() {
 
     private fun handleItemClick(model: SuggestionModel) {
         customizeCharacterViewModel.positionSelected = dataViewModel.allData.value.indexOfFirst { it.avatar == model.avatarPath }
+
+        // ✅ Check if character was found
+        if (customizeCharacterViewModel.positionSelected < 0) {
+            eLog("❌ Character not found for avatar: ${model.avatarPath}")
+            showToast(R.string.an_error_occurred)
+            return
+        }
+
         // ✅ FIX: Use isFromAPI flag from character data instead of position
         val selectedCharacter = dataViewModel.allData.value.getOrNull(customizeCharacterViewModel.positionSelected)
         viewModel.setIsDataAPI(selectedCharacter?.isFromAPI ?: false)
