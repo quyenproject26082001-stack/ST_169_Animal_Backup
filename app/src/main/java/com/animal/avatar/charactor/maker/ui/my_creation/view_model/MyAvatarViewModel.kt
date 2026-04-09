@@ -24,6 +24,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 
+private fun String.urlPath(): String =
+    if (startsWith("http")) substringAfter("://").substringAfter("/")
+    else this
+
 class MyAvatarViewModel : ViewModel() {
     private val _myAvatarList = MutableStateFlow<ArrayList<MyAlbumModel>>(arrayListOf())
     val myAvatarList = _myAvatarList.asStateFlow()
@@ -101,7 +105,10 @@ class MyAvatarViewModel : ViewModel() {
             .toCollection(ArrayList())
 
         editModel = originList.first { it.pathInternalEdit == pathInternal }
-        positionCharacter = allData.indexOfFirst { it.avatar == editModel.avatarPath }
+        val savedAvatarPath = editModel.avatarPath.urlPath()
+        positionCharacter = allData.indexOfFirst { character ->
+            character.avatar.urlPath() == savedAvatarPath
+        }
         // ✅ FIX: Use isFromAPI flag from character data instead of position
         isApi = if (positionCharacter >= 0) allData[positionCharacter].isFromAPI else false
         MediaHelper.writeModelToFile(context, ValueKey.SUGGESTION_FILE_INTERNAL, editModel)

@@ -294,6 +294,7 @@ class CustomizeCharacterActivity : BaseActivity<ActivityCustomizeBinding>() {
                             )!!
                         )
                         viewModel.fillSuggestionToCustomize()
+                        viewModel.rewriteDomainsToActive()
                     }
                 }
 

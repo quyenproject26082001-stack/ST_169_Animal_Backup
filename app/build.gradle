@@ -15,8 +15,8 @@ android {
         applicationId "com.animal.avatar.charactor.maker"
         minSdk 24
         targetSdk 35
-        versionCode 7
-        versionName "1.0.6"
+        versionCode 8
+        versionName "1.0.7"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         def formattedDate = new Date().format('MM.dd.yyyy')
@@ -132,7 +132,7 @@ dependencies {
     implementation 'com.google.firebase:firebase-messaging:23.3.1'
     implementation 'com.google.firebase:firebase-config:21.5.0'
     //ads
-    implementation 'com.github.LVTapp:AdsLibrary:1.5.4'
+    implementation 'com.github.LVTapp:AdsLibrary:1.5.5'
     implementation 'com.google.android.gms:play-services-ads:24.8.0'
     implementation 'com.google.ads.mediation:facebook:6.21.0.0'
     implementation 'com.google.ads.mediation:applovin:13.5.1.0'

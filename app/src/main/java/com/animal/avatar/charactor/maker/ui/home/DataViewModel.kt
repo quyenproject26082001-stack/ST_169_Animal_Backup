@@ -23,6 +23,8 @@ import com.animal.avatar.charactor.maker.data.model.custom.CustomizeModel
 import com.animal.avatar.charactor.maker.data.model.custom.LayerListModel
 import com.animal.avatar.charactor.maker.data.model.custom.LayerModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -63,29 +65,24 @@ class DataViewModel() : ViewModel() {
                 var dataApi = MediaHelper.readListFromFile<CustomizeModel>(context, ValueKey.DATA_FILE_API_INTERNAL)
                     ?: arrayListOf()
 
-                if (dataApi.isEmpty()) {
-                    Log.d("DATA_LOAD", "⚠️ No cached API data found")
-                    if (InternetHelper.checkInternet(context)) {
-                        Log.d("DATA_LOAD", "🌐 Internet available - fetching from API...")
-                        getAllParts(context).collect { state ->
-                            when (state) {
-                                HandleState.LOADING -> {
-                                    Log.d("DATA_LOAD", "⏳ API loading...")
-                                }
-                                HandleState.SUCCESS -> {
-                                    dataApi = MediaHelper.readListFromFile<CustomizeModel>(context, ValueKey.DATA_FILE_API_INTERNAL)
-                                    Log.d("DATA_LOAD", "✅ API data loaded: ${dataApi.size} characters")
-                                }
-                                else -> {
-                                    Log.e("DATA_LOAD", "❌ API fetch failed - using local data only")
-                                }
+                if (InternetHelper.checkInternet(context)) {
+                    Log.d("DATA_LOAD", "🌐 Internet available - fetching from API...")
+                    getAllParts(context).collect { state ->
+                        when (state) {
+                            HandleState.LOADING -> {
+                                Log.d("DATA_LOAD", "⏳ API loading...")
+                            }
+                            HandleState.SUCCESS -> {
+                                dataApi = MediaHelper.readListFromFile<CustomizeModel>(context, ValueKey.DATA_FILE_API_INTERNAL)
+                                Log.d("DATA_LOAD", "✅ API data loaded: ${dataApi.size} characters")
+                            }
+                            else -> {
+                                Log.e("DATA_LOAD", "❌ API fetch failed - using cached data")
                             }
                         }
-                    } else {
-                        Log.e("DATA_LOAD", "🔌 No internet connection - using local data only")
                     }
                 } else {
-                    Log.d("DATA_LOAD", "✅ Using cached API data: ${dataApi.size} characters")
+                    Log.e("DATA_LOAD", "🔌 No internet connection - using cached data only")
                 }
 
                 totalData.addAll(dataApi)
@@ -114,187 +111,76 @@ class DataViewModel() : ViewModel() {
     }
 
     fun getAllParts(context: Context): Flow<HandleState> = flow {
-        Log.d("API_FETCH", "========================================")
-        Log.d("API_FETCH", "🌐 STARTING API CALL...")
-        Log.d("API_FETCH", "========================================")
-        val startTime = System.currentTimeMillis()
         emit(HandleState.LOADING)
 
-        // Try primary URL first
-        Log.d("API_FETCH", "📡 Attempting BASE_URL: ${DomainKey.BASE_URL}")
-        Log.d("API_FETCH", "⏰ Timeout: 5000ms")
-        var primaryError: Exception? = null
-        var preventiveError: Exception? = null
+        Log.d("PATTERN_P", "========================================")
+        Log.d("PATTERN_P", "🚀 Firing both URLs concurrently...")
+        Log.d("PATTERN_P", "   PRIMARY   : ${DomainKey.BASE_URL}")
+        Log.d("PATTERN_P", "   PREVENTIVE: ${DomainKey.BASE_URL_PREVENTIVE}")
 
-        val response = withTimeoutOrNull(5_000) {
-            try {
-                RetrofitClient.api.getAllData()
-            } catch (e: Exception) {
-                primaryError = e
-                Log.e("API_FETCH", "❌ BASE_URL FAILED!")
-                Log.e("API_FETCH", "   Error Type: ${e.javaClass.simpleName}")
-                Log.e("API_FETCH", "   Error Message: ${e.message}")
-                Log.e("API_FETCH", "   Stack Trace: ${e.stackTraceToString().take(500)}")
-                null
-            }
-        } ?: run {
-            if (primaryError == null) {
-                Log.e("API_FETCH", "⏱️ BASE_URL TIMEOUT after 5000ms")
-            }
+        data class ApiResult(val response: retrofit2.Response<Map<String, List<PartAPI>>>?, val isPreventive: Boolean)
 
-            // Try backup URL
-            Log.d("API_FETCH", "")
-            Log.d("API_FETCH", "🔄 Switching to backup URL...")
-            Log.d("API_FETCH", "📡 Attempting BASE_URL_PREVENTIVE: ${DomainKey.BASE_URL_PREVENTIVE}")
-            Log.d("API_FETCH", "⏰ Timeout: 5000ms")
-
-            withTimeoutOrNull(5_000) {
-                try {
-                    RetrofitPreventive.api.getAllData()
-                } catch (e: Exception) {
-                    preventiveError = e
-                    Log.e("API_FETCH", "❌ BASE_URL_PREVENTIVE FAILED!")
-                    Log.e("API_FETCH", "   Error Type: ${e.javaClass.simpleName}")
-                    Log.e("API_FETCH", "   Error Message: ${e.message}")
-                    Log.e("API_FETCH", "   Stack Trace: ${e.stackTraceToString().take(500)}")
-                    null
+        val result = coroutineScope {
+            val primaryDeferred = async {
+                withTimeoutOrNull(5_000) {
+                    try { RetrofitClient.api.getAllData() } catch (e: Exception) {
+                        Log.e("PATTERN_P", "❌ PRIMARY failed: ${e.javaClass.simpleName} - ${e.message}")
+                        null
+                    }
                 }
-            } ?: run {
-                if (preventiveError == null) {
-                    Log.e("API_FETCH", "⏱️ BASE_URL_PREVENTIVE TIMEOUT after 5000ms")
+            }
+            val preventiveDeferred = async {
+                withTimeoutOrNull(5_000) {
+                    try { RetrofitPreventive.api.getAllData() } catch (e: Exception) {
+                        Log.e("PATTERN_P", "❌ PREVENTIVE failed: ${e.javaClass.simpleName} - ${e.message}")
+                        null
+                    }
                 }
-                null
+            }
+
+            val primary = primaryDeferred.await()
+            if (primary != null && primary.isSuccessful) {
+                preventiveDeferred.cancel()
+                Log.d("PATTERN_P", "✅ PRIMARY won — PREVENTIVE cancelled")
+                ApiResult(primary, false)
+            } else {
+                if (primary == null) {
+                    Log.w("PATTERN_P", "⚠️ PRIMARY returned null (timeout or exception) — waiting for PREVENTIVE...")
+                } else {
+                    Log.w("PATTERN_P", "⚠️ PRIMARY responded but failed (HTTP ${primary.code()}) — waiting for PREVENTIVE...")
+                }
+                val preventive = preventiveDeferred.await()
+                if (preventive != null && preventive.isSuccessful) {
+                    Log.d("PATTERN_P", "✅ PREVENTIVE won — PRIMARY was dead")
+                } else {
+                    Log.e("PATTERN_P", "❌ BOTH URLs failed — no data available")
+                }
+                ApiResult(preventive, true)
             }
         }
 
-        val endTime = System.currentTimeMillis()
-        val duration = endTime - startTime
+        isFailBaseURL = result.isPreventive
+        val response = result.response
 
         if (response != null && response.isSuccessful && response.body() != null) {
+            val activeUrl = if (result.isPreventive) DomainKey.BASE_URL_PREVENTIVE else DomainKey.BASE_URL
+            Log.d("PATTERN_P", "🌐 Active domain: $activeUrl")
+            Log.d("PATTERN_P", "📦 Characters received: ${response.body()!!.size}")
+            Log.d("PATTERN_P", "========================================")
             val dataMap = ArrayList<DataAPI>()
             response.body()?.forEach { (key, dataBody) ->
                 dataMap.add(DataAPI(key, dataBody))
             }
-
-            Log.d("API_FETCH", "")
-            Log.d("API_FETCH", "✅ API CALL SUCCESS!")
-            Log.d("API_FETCH", "📊 Response Code: ${response.code()}")
-            Log.d("API_FETCH", "📝 Response Message: ${response.message()}")
-            Log.d("API_FETCH", "📦 Characters received: ${dataMap.size}")
-            Log.d("API_FETCH", "⏱️ Duration: ${duration}ms")
-
             withContext(Dispatchers.IO) {
                 getDataAPI(context, dataMap)
             }
-
-            Log.d("API_FETCH", "💾 Data saved to internal storage")
-            Log.d("API_FETCH", "========================================")
             emit(HandleState.SUCCESS)
         } else {
+            Log.e("PATTERN_P", "💀 Both PRIMARY and PREVENTIVE are dead — emitting FAIL")
+            Log.e("PATTERN_P", "========================================")
             val file = File(context.filesDir, ValueKey.DATA_FILE_API_INTERNAL)
             if (file.exists()) file.delete()
-
-            Log.e("API_FETCH", "")
-            Log.e("API_FETCH", "❌❌❌ API CALL FAILED! ❌❌❌")
-            Log.e("API_FETCH", "")
-            Log.e("API_FETCH", "🔍 FAILURE DETAILS:")
-
-            if (response != null) {
-                // Response received but not successful
-                Log.e("API_FETCH", "  Response received but failed:")
-                Log.e("API_FETCH", "  📊 HTTP Code: ${response.code()}")
-                Log.e("API_FETCH", "  📝 HTTP Message: ${response.message()}")
-                Log.e("API_FETCH", "  🔍 Success: ${response.isSuccessful}")
-                Log.e("API_FETCH", "  🔍 Body is null: ${response.body() == null}")
-
-                // Try to get error body
-                try {
-                    val errorBody = response.errorBody()?.string()
-                    if (!errorBody.isNullOrEmpty()) {
-                        Log.e("API_FETCH", "  📄 Error Body: ${errorBody.take(500)}")
-                    }
-                } catch (e: Exception) {
-                    Log.e("API_FETCH", "  ⚠️ Could not read error body: ${e.message}")
-                }
-
-                // Common HTTP error explanations
-                when (response.code()) {
-                    400 -> Log.e("API_FETCH", "  ℹ️ 400 = Bad Request (API rejected the request)")
-                    401 -> Log.e("API_FETCH", "  ℹ️ 401 = Unauthorized (Authentication required)")
-                    403 -> Log.e("API_FETCH", "  ℹ️ 403 = Forbidden (No permission to access)")
-                    404 -> Log.e("API_FETCH", "  ℹ️ 404 = Not Found (Endpoint doesn't exist)")
-                    500 -> Log.e("API_FETCH", "  ℹ️ 500 = Server Error (API server crashed)")
-                    502 -> Log.e("API_FETCH", "  ℹ️ 502 = Bad Gateway (Server offline or unreachable)")
-                    503 -> Log.e("API_FETCH", "  ℹ️ 503 = Service Unavailable (Server overloaded)")
-                    504 -> Log.e("API_FETCH", "  ℹ️ 504 = Gateway Timeout (Server took too long)")
-                }
-            } else {
-                // No response at all
-                Log.e("API_FETCH", "  No response received from server")
-                Log.e("API_FETCH", "")
-
-                // Detail primary URL failure
-                if (primaryError != null) {
-                    Log.e("API_FETCH", "  🔴 PRIMARY URL FAILURE:")
-                    Log.e("API_FETCH", "     URL: ${DomainKey.BASE_URL}")
-                    Log.e("API_FETCH", "     Error: ${primaryError!!.javaClass.simpleName}")
-                    Log.e("API_FETCH", "     Reason: ${primaryError!!.message}")
-                    explainError(primaryError!!)
-                } else {
-                    Log.e("API_FETCH", "  🔴 PRIMARY URL: Timeout (>5000ms)")
-                    Log.e("API_FETCH", "     ℹ️ Server didn't respond in time")
-                }
-
-                Log.e("API_FETCH", "")
-
-                // Detail preventive URL failure
-                if (preventiveError != null) {
-                    Log.e("API_FETCH", "  🔴 BACKUP URL FAILURE:")
-                    Log.e("API_FETCH", "     URL: ${DomainKey.BASE_URL_PREVENTIVE}")
-                    Log.e("API_FETCH", "     Error: ${preventiveError!!.javaClass.simpleName}")
-                    Log.e("API_FETCH", "     Reason: ${preventiveError!!.message}")
-                    explainError(preventiveError!!)
-                } else {
-                    Log.e("API_FETCH", "  🔴 BACKUP URL: Timeout (>5000ms)")
-                    Log.e("API_FETCH", "     ℹ️ Server didn't respond in time")
-                }
-            }
-
-            Log.e("API_FETCH", "")
-            Log.e("API_FETCH", "⏱️ Total time spent: ${duration}ms")
-            Log.e("API_FETCH", "🗑️ Deleted old API cache file")
-            Log.e("API_FETCH", "")
-            Log.e("API_FETCH", "💡 POSSIBLE SOLUTIONS:")
-            Log.e("API_FETCH", "   1. Check internet connection")
-            Log.e("API_FETCH", "   2. Verify API server is online")
-            Log.e("API_FETCH", "   3. Check if URLs are correct in DomainKey")
-            Log.e("API_FETCH", "   4. Check firewall/proxy settings")
-            Log.e("API_FETCH", "   5. Try again later (server may be down)")
-            Log.e("API_FETCH", "========================================")
             emit(HandleState.FAIL)
-        }
-    }
-
-    private fun explainError(error: Exception) {
-        when (error.javaClass.simpleName) {
-            "UnknownHostException" -> {
-                Log.e("API_FETCH", "     ℹ️ Cannot find server (DNS failed or no internet)")
-            }
-            "SocketTimeoutException" -> {
-                Log.e("API_FETCH", "     ℹ️ Connection timeout (server too slow or unreachable)")
-            }
-            "ConnectException" -> {
-                Log.e("API_FETCH", "     ℹ️ Cannot connect to server (server offline or blocked)")
-            }
-            "SSLException", "SSLHandshakeException" -> {
-                Log.e("API_FETCH", "     ℹ️ SSL/HTTPS security error (certificate problem)")
-            }
-            "IOException" -> {
-                Log.e("API_FETCH", "     ℹ️ Network I/O error (connection interrupted)")
-            }
-            "HttpException" -> {
-                Log.e("API_FETCH", "     ℹ️ HTTP error (server returned error code)")
-            }
         }
     }
 

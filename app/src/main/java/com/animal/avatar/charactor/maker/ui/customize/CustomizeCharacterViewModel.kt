@@ -13,7 +13,9 @@ import com.animal.avatar.charactor.maker.core.extensions.hideNavigation
 import com.animal.avatar.charactor.maker.core.helper.BitmapHelper
 import com.animal.avatar.charactor.maker.core.helper.InternetHelper
 import com.animal.avatar.charactor.maker.core.helper.MediaHelper
+import com.animal.avatar.charactor.maker.core.utils.DataLocal.isFailBaseURL
 import com.animal.avatar.charactor.maker.core.utils.key.AssetsKey
+import com.animal.avatar.charactor.maker.core.utils.key.DomainKey
 import com.animal.avatar.charactor.maker.core.utils.key.ValueKey
 import com.animal.avatar.charactor.maker.core.utils.state.HandleState
 import com.animal.avatar.charactor.maker.core.utils.state.SaveState
@@ -717,6 +719,43 @@ class CustomizeCharacterViewModel : ViewModel() {
         updateKeySelectedItemList(fixedKeySelectedItemList)
         updateIsShowColorList(fixedIsShowColorList)
         updatePathSelectedList(fixedPathSelectedList)
+    }
+
+    fun rewriteDomainsToActive() {
+        val activeDomain = if (!isFailBaseURL) DomainKey.BASE_URL else DomainKey.BASE_URL_PREVENTIVE
+        val deadDomain = if (!isFailBaseURL) DomainKey.BASE_URL_PREVENTIVE else DomainKey.BASE_URL
+
+        if (!pathSelectedList.any { it.contains(deadDomain) } &&
+            !keySelectedItemList.any { it.contains(deadDomain) }) return
+
+        Log.d("PATTERN_P", "🔄 Rewriting dead domain in saved creation...")
+        Log.d("PATTERN_P", "   dead  : $deadDomain")
+        Log.d("PATTERN_P", "   active: $activeDomain")
+
+        for (i in pathSelectedList.indices) {
+            pathSelectedList[i] = pathSelectedList[i].replace(deadDomain, activeDomain)
+        }
+
+        for (i in keySelectedItemList.indices) {
+            keySelectedItemList[i] = keySelectedItemList[i].replace(deadDomain, activeDomain)
+        }
+
+        for (i in itemNavList.indices) {
+            val navList = itemNavList[i]
+            for (j in navList.indices) {
+                val item = navList[j]
+                val newColors = ArrayList<ItemColorImageModel>(item.listImageColor.size)
+                for (colorItem in item.listImageColor) {
+                    newColors.add(colorItem.copy(path = colorItem.path.replace(deadDomain, activeDomain)))
+                }
+                navList[j] = item.copy(
+                    path = item.path.replace(deadDomain, activeDomain),
+                    listImageColor = newColors
+                )
+            }
+        }
+
+        Log.d("PATTERN_P", "✅ Domain rewrite complete")
     }
 
     private fun <T> validateListSize(
