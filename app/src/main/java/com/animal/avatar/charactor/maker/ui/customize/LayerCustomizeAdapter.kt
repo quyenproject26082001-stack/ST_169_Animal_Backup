@@ -68,7 +68,7 @@ class LayerCustomizeAdapter(val context: Context) : ListAdapter<ItemNavCustomMod
                         btnNone.gone()
                         imvImage.visible()
                         btnRandom.gone()
-                        Glide.with(root).load(item.path).placeholder(shimmerDrawable).into(imvImage)
+                        Glide.with(root).load(item.thumb.ifEmpty { item.path }).placeholder(shimmerDrawable).into(imvImage)
                     }
                 }
 

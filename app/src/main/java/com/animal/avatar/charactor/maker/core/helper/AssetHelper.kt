@@ -161,11 +161,18 @@ object AssetHelper {
                 val navigationImage =
                     "${AssetsKey.DATA_ASSET}${character}/${sortedLayer[i]}/${folderOrImageSortedList.last()}"
                 folderOrImageSortedList.removeAt(folderOrImageSortedList.size - 1)
+
+                // Tách thumb files ra khỏi list, lấy full path, sort theo index
+                val thumbFiles = folderOrImageSortedList.filter { it.startsWith("thumb_") }
+                    .sortedBy { it.removePrefix("thumb_").removeSuffix(".png").toIntOrNull() ?: 0 }
+                    .map { "${AssetsKey.DATA_ASSET}$character/${sortedLayer[i]}/$it" }
+                folderOrImageSortedList.removeAll { it.startsWith("thumb_") }
+
                 // Nếu không có folder -> không có màu
                 val layer = if (AssetsKey.FIRST_IMAGE.any { it in folderOrImageSortedList[0] }) {
-                    getDataNoColor(character, folderOrImageSortedList, sortedLayer[i])
+                    getDataNoColor(character, folderOrImageSortedList, sortedLayer[i], thumbFiles)
                 } else {
-                    getDataColor(assetManager, character, folderOrImageSortedList, sortedLayer[i])
+                    getDataColor(assetManager, character, folderOrImageSortedList, sortedLayer[i], thumbFiles)
                 }
                 val layerListModel = LayerListModel(positionCustom, positionNavigation, navigationImage, layer)
                 layerListModelList.add(layerListModel)
@@ -182,15 +189,15 @@ object AssetHelper {
         return customList
     }
 
-    private fun getDataNoColor(character: String, filesList: List<String>, folder: String): ArrayList<LayerModel> {
+    private fun getDataNoColor(character: String, filesList: List<String>, folder: String, thumbFiles: List<String> = emptyList()): ArrayList<LayerModel> {
         val layerPath = ArrayList<LayerModel>()
-        for (fileName in filesList) {
-            // file:///android_asset/nuggts/ + nuggts1 + body + 1.png
+        filesList.forEachIndexed { index, fileName ->
             layerPath.add(
                 LayerModel(
                     image = "${AssetsKey.DATA_ASSET}$character/$folder/$fileName",
                     isMoreColors = false,
-                    listColor = arrayListOf()
+                    listColor = arrayListOf(),
+                    thumb = thumbFiles.getOrElse(index) { "" }
                 )
             )
         }
@@ -198,7 +205,7 @@ object AssetHelper {
     }
 
     private fun getDataColor(
-        assetManager: AssetManager, character: String, folderList: List<String>, folder: String
+        assetManager: AssetManager, character: String, folderList: List<String>, folder: String, thumbFiles: List<String> = emptyList()
     ): ArrayList<LayerModel> {
         val colorNames = folderList.map { "#$it" }
         val fileList = folderList.map { colorFolder ->
@@ -219,7 +226,7 @@ object AssetHelper {
         }.toCollection(ArrayList())
 
         return fileList.first().take(minSize).mapIndexed { index, file ->
-            LayerModel(image = file, isMoreColors = true, listColor = colorList[index])
+            LayerModel(image = file, isMoreColors = true, listColor = colorList[index], thumb = thumbFiles.getOrElse(index) { "" })
         }.toCollection(ArrayList())
     }
 }

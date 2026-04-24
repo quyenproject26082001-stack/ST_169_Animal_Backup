@@ -568,7 +568,8 @@ class CustomizeCharacterViewModel : ViewModel() {
             if (!layer.isMoreColors) {
                 listItem.add(
                     ItemNavCustomModel(
-                        path = layer.image, positionCustom = positionCustom, positionNavigation = positionNavigation
+                        path = layer.image, positionCustom = positionCustom, positionNavigation = positionNavigation,
+                        thumb = layer.thumb
                     )
                 )
             } else {
@@ -588,6 +589,7 @@ class CustomizeCharacterViewModel : ViewModel() {
                         positionNavigation = positionNavigation,
                         isSelected = false,
                         listImageColor = listItemColor,
+                        thumb = layer.thumb
                     )
                 )
             }

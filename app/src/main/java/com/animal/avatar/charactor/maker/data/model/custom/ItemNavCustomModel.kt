@@ -5,5 +5,6 @@ data class ItemNavCustomModel(
     val positionCustom: Int,
     val positionNavigation: Int,
     var isSelected: Boolean = false,
-    val listImageColor: ArrayList<ItemColorImageModel> = arrayListOf()
+    val listImageColor: ArrayList<ItemColorImageModel> = arrayListOf(),
+    val thumb: String = ""
 )
