@@ -58,6 +58,19 @@ fun loadImage(viewGroup: ViewGroup, path: Int, imageView: ImageView, isLoadShimm
     }
 }
 
+fun loadImageKeepShimmer(path: Any, imageView: ImageView, onShowLoading: (() -> Unit)? = null, onDismissLoading: (() -> Unit)? = null) {
+    onShowLoading?.invoke()
+    Glide.with(imageView.context).load(path).listener(object : RequestListener<Drawable> {
+        override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable?>, isFirstResource: Boolean): Boolean {
+            return false // shimmer giữ nguyên
+        }
+        override fun onResourceReady(resource: Drawable, model: Any, target: Target<Drawable?>?, dataSource: DataSource, isFirstResource: Boolean): Boolean {
+            onDismissLoading?.invoke()
+            return false
+        }
+    }).into(imageView)
+}
+
 fun loadImage(path: Any, imageView: ImageView, onShowLoading: (() -> Unit)? = null, onDismissLoading: (() -> Unit)? = null){
     onShowLoading?.invoke()
     Glide.with(imageView.context).load(path).listener(object : RequestListener<Drawable>{
