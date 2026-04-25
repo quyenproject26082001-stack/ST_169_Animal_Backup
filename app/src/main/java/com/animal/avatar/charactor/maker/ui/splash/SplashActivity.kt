@@ -31,7 +31,7 @@ class SplashActivity : BaseActivity<ActivitySplashBinding>() {
         val rotateAnimation = android.view.animation.AnimationUtils.loadAnimation(this, R.anim.rotate_loading)
         binding.ivLoading.startAnimation(rotateAnimation)
 
-        Admob.getInstance().setOpenShowAllAds(true)
+        Admob.getInstance().setOpenShowAllAds(false)
         if (!isTaskRoot &&
             intent.hasCategory(Intent.CATEGORY_LAUNCHER) &&
             intent.action != null &&
