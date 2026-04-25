@@ -11,4 +11,5 @@ object DomainKey {
     const val LAYER_EXTENSION = ".png"
     const val IMAGE_NAVIGATION = "nav.png"
 
+
 }

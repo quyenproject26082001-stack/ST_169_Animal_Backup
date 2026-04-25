@@ -118,4 +118,9 @@
     <string name="loading">Loading</string>
     <string name="internet_required_for_more_characters">Internet required for more characters</string>
     <string name="edit">Edit</string>
+    <string name="cat_maker">Cat Maker</string>
+    <string name="animal_maker">Animal Maker</string>
+    <string name="dog_maker">Dog Maker</string>
+    <string name="dragon_maker">Dragon Maker</string>
+    <string name="pony_maker">Pony Maker</string>
 </resources>

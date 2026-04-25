@@ -117,4 +117,9 @@
     <string name="loading">Memuat</string>
     <string name="internet_required_for_more_characters">Internet diperlukan untuk karakter lebih banyak</string>
     <string name="edit">Edit</string>
+    <string name="cat_maker">Pembuat Kucing</string>
+    <string name="animal_maker">Pembuat Hewan</string>
+    <string name="dog_maker">Pembuat Anjing</string>
+    <string name="dragon_maker">Pembuat Naga</string>
+    <string name="pony_maker">Pembuat Kuda Poni</string>
 </resources>

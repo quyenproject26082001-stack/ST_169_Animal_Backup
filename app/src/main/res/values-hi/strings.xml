@@ -117,4 +117,9 @@
     <string name="loading">लोड हो रहा है</string>
     <string name="internet_required_for_more_characters">अधिक कैरेक्टर के लिए इंटरनेट आवश्यक है</string>
     <string name="edit">संपादित करें</string>
+    <string name="cat_maker">बिल्ली निर्माता</string>
+    <string name="animal_maker">पशु निर्माता</string>
+    <string name="dog_maker">कुत्ता निर्माता</string>
+    <string name="dragon_maker">ड्रैगन निर्माता</string>
+    <string name="pony_maker">टट्टू निर्माता</string>
 </resources>

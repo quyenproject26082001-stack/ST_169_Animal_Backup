@@ -117,4 +117,9 @@
     <string name="loading">Carregando</string>
     <string name="internet_required_for_more_characters">Internet necessária para mais personagens</string>
     <string name="edit">Editar</string>
+    <string name="cat_maker">Criador de Gatos</string>
+    <string name="animal_maker">Criador de Animais</string>
+    <string name="dog_maker">Criador de Cães</string>
+    <string name="dragon_maker">Criador de Dragões</string>
+    <string name="pony_maker">Criador de Pôneis</string>
 </resources>

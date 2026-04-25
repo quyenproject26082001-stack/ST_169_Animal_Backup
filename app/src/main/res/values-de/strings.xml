@@ -117,4 +117,9 @@
     <string name="loading">Wird geladen</string>
     <string name="internet_required_for_more_characters">Internet erforderlich für weitere Charaktere</string>
     <string name="edit">Bearbeiten</string>
+    <string name="cat_maker">Katzen-Maker</string>
+    <string name="animal_maker">Tier-Maker</string>
+    <string name="dog_maker">Hunde-Maker</string>
+    <string name="dragon_maker">Drachen-Maker</string>
+    <string name="pony_maker">Pony-Maker</string>
 </resources>
