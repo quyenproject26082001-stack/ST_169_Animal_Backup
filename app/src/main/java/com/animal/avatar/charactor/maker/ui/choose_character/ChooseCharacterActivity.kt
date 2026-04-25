@@ -140,7 +140,7 @@ class ChooseCharacterActivity : BaseActivity<ActivityChooseCharacterBinding>() {
                 android.util.Log.d("ChooseCharacter", "API character - checking internet...")
                 InternetHelper.checkInternet(this) { state ->
                     if (state == HandleState.SUCCESS) {
-                        showInterAll { startIntentRightToLeft(CustomizeCharacterActivity::class.java, position) }
+                        showInterAll { navigateToCustomize(position) }
                     } else {
                         // Show No Internet dialog
                         val dialog = com.animal.avatar.charactor.maker.dialog.YesNoDialog(
@@ -159,7 +159,7 @@ class ChooseCharacterActivity : BaseActivity<ActivityChooseCharacterBinding>() {
             } else {
                 android.util.Log.d("ChooseCharacter", "Local character - navigating directly")
                 android.util.Log.d("ChooseCharacter", "========================================")
-                showInterAll { startIntentRightToLeft(CustomizeCharacterActivity::class.java, position) }
+                showInterAll { navigateToCustomize(position) }
             }
         }
     }
@@ -177,6 +177,14 @@ class ChooseCharacterActivity : BaseActivity<ActivityChooseCharacterBinding>() {
             }
             setTextActionBar(tvCenter, title)
         }
+    }
+
+    private fun navigateToCustomize(position: Int) {
+        val intent = android.content.Intent(this, CustomizeCharacterActivity::class.java)
+        intent.putExtra(IntentKey.INTENT_KEY, position)
+        intent.putExtra(IntentKey.DATA_TYPE_KEY, currentDataType)
+        val option = android.app.ActivityOptions.makeCustomAnimation(this, R.anim.slide_in_right, R.anim.slide_out_left)
+        startActivity(intent, option.toBundle())
     }
 
     private fun initRcv() {

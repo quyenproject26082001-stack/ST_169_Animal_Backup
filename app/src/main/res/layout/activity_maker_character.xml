@@ -5,12 +5,10 @@
     android:layout_height="match_parent"
     android:background="@drawable/img_splash_language">
 
-    <!-- layoutActionBar -->
     <FrameLayout
         android:id="@+id/layoutActionBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_constraintTop_toTopOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
         <include
@@ -18,132 +16,173 @@
             layout="@layout/layout_actionbar" />
     </FrameLayout>
 
-
+    <!--    native_ads-->
     <FrameLayout
-        android:id="@+id/btnCatMaker"
+        android:id="@+id/native_ads"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_marginHorizontal="18dp"
-        android:layout_marginTop="14dp"
-        android:background="@drawable/bg_cat_maker"
-        app:layout_constraintDimensionRatio="324:100"
+        android:layout_height="wrap_content"
         app:layout_constraintTop_toBottomOf="@id/layoutActionBar">
 
-        <com.animal.avatar.charactor.maker.core.custom.text.DoubleStrokeTextView
-            android:layout_width="200dp"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical|end"
-            android:layout_marginEnd="50dp"
-            android:fontFamily="@font/cherrybombone_regular"
-            android:gravity="center"
-            android:text="@string/cat_maker"
-            android:textColor="@color/white"
-            android:textSize="22sp"
-            app:outerStrokeColor="#F44336"
-            app:outerStrokeWidth="4dp" />
-
+        <include layout="@layout/ads_native_collap_banner_shimmer" />
     </FrameLayout>
 
 
-    <FrameLayout
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scrollView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginHorizontal="18dp"
-        android:layout_marginTop="24dp"
-        android:background="@drawable/bg_dragon_maker"
-        app:layout_constraintDimensionRatio="324:100"
-        app:layout_constraintTop_toBottomOf="@id/btnCatMaker"
-        android:id="@+id/btnDragonMaker">
+        android:overScrollMode="never"
+        android:scrollbars="none"
+        app:layout_constraintTop_toBottomOf="@id/native_ads"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginBottom="82dp"
+        >
 
-        <com.animal.avatar.charactor.maker.core.custom.text.DoubleStrokeTextView
-            android:layout_width="200dp"
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical|start"
-            android:layout_marginEnd="50dp"
-            android:fontFamily="@font/cherrybombone_regular"
-            android:gravity="center"
-            android:text="@string/dragon_maker"
-            android:textColor="@color/white"
-            android:textSize="22sp"
-            app:outerStrokeColor="#F44336"
-            app:outerStrokeWidth="4dp" />
-    </FrameLayout>
+            android:paddingBottom="16dp">
 
+            <FrameLayout
+                android:id="@+id/btnCatMaker"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_marginHorizontal="18dp"
+                android:layout_marginTop="14dp"
+                android:background="@drawable/bg_cat_maker"
+                app:layout_constraintDimensionRatio="324:100"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <com.animal.avatar.charactor.maker.core.custom.text.DoubleStrokeTextView
+                    android:layout_width="200dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical|end"
+                    android:layout_marginEnd="50dp"
+                    android:fontFamily="@font/cherrybombone_regular"
+                    android:gravity="center"
+                    android:text="@string/cat_maker"
+                    android:textColor="@color/white"
+                    android:textSize="22sp"
+                    app:outerStrokeColor="#F44336"
+                    app:outerStrokeWidth="4dp" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:id="@+id/btnDragonMaker"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_marginHorizontal="18dp"
+                android:layout_marginTop="24dp"
+                android:background="@drawable/bg_dragon_maker"
+                app:layout_constraintDimensionRatio="324:100"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/btnCatMaker">
+
+                <com.animal.avatar.charactor.maker.core.custom.text.DoubleStrokeTextView
+                    android:layout_width="200dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical|start"
+                    android:layout_marginEnd="50dp"
+                    android:fontFamily="@font/cherrybombone_regular"
+                    android:gravity="center"
+                    android:text="@string/dragon_maker"
+                    android:textColor="@color/white"
+                    android:textSize="22sp"
+                    app:outerStrokeColor="#F44336"
+                    app:outerStrokeWidth="4dp" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:id="@+id/btnDogMaker"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_marginHorizontal="18dp"
+                android:layout_marginTop="24dp"
+                android:background="@drawable/bg_dog_maker"
+                app:layout_constraintDimensionRatio="324:100"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/btnDragonMaker">
+
+                <com.animal.avatar.charactor.maker.core.custom.text.DoubleStrokeTextView
+                    android:layout_width="200dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical|end"
+                    android:layout_marginEnd="50dp"
+                    android:fontFamily="@font/cherrybombone_regular"
+                    android:gravity="center"
+                    android:text="@string/dog_maker"
+                    android:textColor="@color/white"
+                    android:textSize="22sp"
+                    app:outerStrokeColor="#F44336"
+                    app:outerStrokeWidth="4dp" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:id="@+id/btnPonyMaker"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_marginHorizontal="18dp"
+                android:layout_marginTop="24dp"
+                android:background="@drawable/bg_pony_maker"
+                app:layout_constraintDimensionRatio="324:100"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/btnDogMaker">
+
+                <com.animal.avatar.charactor.maker.core.custom.text.DoubleStrokeTextView
+                    android:layout_width="200dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical|start"
+                    android:layout_marginEnd="50dp"
+                    android:fontFamily="@font/cherrybombone_regular"
+                    android:gravity="center"
+                    android:text="@string/pony_maker"
+                    android:textColor="@color/white"
+                    android:textSize="22sp"
+                    app:outerStrokeColor="#F44336"
+                    app:outerStrokeWidth="4dp" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:id="@+id/btnAnimalMaker"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_marginHorizontal="18dp"
+                android:layout_marginTop="24dp"
+                android:background="@drawable/bg_animal_maker"
+                app:layout_constraintDimensionRatio="324:100"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/btnPonyMaker">
+
+                <com.animal.avatar.charactor.maker.core.custom.text.DoubleStrokeTextView
+                    android:layout_width="200dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical|end"
+                    android:layout_marginEnd="50dp"
+                    android:fontFamily="@font/cherrybombone_regular"
+                    android:gravity="center"
+                    android:text="@string/animal_maker"
+                    android:textColor="@color/white"
+                    android:textSize="22sp"
+                    app:outerStrokeColor="#F44336"
+                    app:outerStrokeWidth="4dp" />
+            </FrameLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.core.widget.NestedScrollView>
 
     <FrameLayout
-        android:id="@+id/btnDogMaker"
+        android:id="@+id/flNativeCollab"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_marginHorizontal="18dp"
-        android:layout_marginTop="24dp"
-        android:background="@drawable/bg_dog_maker"
-        app:layout_constraintDimensionRatio="324:100"
-        app:layout_constraintTop_toBottomOf="@id/btnDragonMaker">
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent">
 
-        <com.animal.avatar.charactor.maker.core.custom.text.DoubleStrokeTextView
-            android:layout_width="200dp"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical|end"
-            android:layout_marginEnd="50dp"
-            android:fontFamily="@font/cherrybombone_regular"
-            android:gravity="center"
-            android:text="@string/dog_maker"
-            android:textColor="@color/white"
-            android:textSize="22sp"
-            app:outerStrokeColor="#F44336"
-            app:outerStrokeWidth="4dp" />
+        <include layout="@layout/ads_shimmer_collap_native" />
     </FrameLayout>
-
-    <FrameLayout
-        android:id="@+id/btnPonyMaker"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_marginHorizontal="18dp"
-        android:layout_marginTop="24dp"
-        android:background="@drawable/bg_pony_maker"
-        app:layout_constraintDimensionRatio="324:100"
-        app:layout_constraintTop_toBottomOf="@id/btnDogMaker">
-
-        <com.animal.avatar.charactor.maker.core.custom.text.DoubleStrokeTextView
-            android:layout_width="200dp"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical|start"
-            android:layout_marginEnd="50dp"
-            android:fontFamily="@font/cherrybombone_regular"
-            android:gravity="center"
-            android:text="@string/pony_maker"
-            android:textColor="@color/white"
-            android:textSize="22sp"
-            app:outerStrokeColor="#F44336"
-            app:outerStrokeWidth="4dp" />
-    </FrameLayout>
-
-
-    <FrameLayout
-        android:id="@+id/btnAnimalMaker"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_marginHorizontal="18dp"
-        android:layout_marginTop="24dp"
-        android:background="@drawable/bg_animal_maker"
-        app:layout_constraintDimensionRatio="324:100"
-        app:layout_constraintTop_toBottomOf="@id/btnPonyMaker">
-
-        <com.animal.avatar.charactor.maker.core.custom.text.DoubleStrokeTextView
-            android:layout_width="200dp"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical|end"
-            android:layout_marginEnd="50dp"
-            android:fontFamily="@font/cherrybombone_regular"
-            android:gravity="center"
-            android:text="@string/animal_maker"
-            android:textColor="@color/white"
-            android:textSize="22sp"
-            app:outerStrokeColor="#F44336"
-            app:outerStrokeWidth="4dp" />
-    </FrameLayout>
-
-
-
 
 </androidx.constraintlayout.widget.ConstraintLayout>

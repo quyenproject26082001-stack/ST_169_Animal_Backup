@@ -70,9 +70,12 @@ class CustomizeCharacterActivity : BaseActivity<ActivityCustomizeBinding>() {
     override fun initView() {
         initRcv()
         lifecycleScope.launch { showLoading() }
-        dataViewModel.ensureData(this)
-
-
+        val dataType = intent.getIntExtra(IntentKey.DATA_TYPE_KEY, IntentKey.DATA_TYPE_DEFAULT)
+        if (dataType != IntentKey.DATA_TYPE_DEFAULT) {
+            dataViewModel.loadDataByType(this, dataType)
+        } else {
+            dataViewModel.ensureData(this)
+        }
     }
 
     override fun dataObservable() {

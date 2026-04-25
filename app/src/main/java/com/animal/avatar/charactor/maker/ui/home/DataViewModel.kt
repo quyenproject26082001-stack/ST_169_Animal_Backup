@@ -9,11 +9,11 @@ import androidx.lifecycle.viewModelScope
 import com.animal.avatar.charactor.maker.core.helper.AssetHelper
 import com.animal.avatar.charactor.maker.core.helper.InternetHelper
 import com.animal.avatar.charactor.maker.core.helper.MediaHelper
+import com.animal.avatar.charactor.maker.core.helper.SharePreferenceHelper
 import com.animal.avatar.charactor.maker.core.utils.key.AssetsKey
 import com.animal.avatar.charactor.maker.core.service.RetrofitClient
 import com.animal.avatar.charactor.maker.core.service.RetrofitPreventive
 import com.animal.avatar.charactor.maker.core.utils.DataLocal.isFailBaseURL
-import com.animal.avatar.charactor.maker.core.utils.key.AssetsKey
 import com.animal.avatar.charactor.maker.core.utils.key.DomainKey
 import com.animal.avatar.charactor.maker.core.utils.key.ValueKey
 import com.animal.avatar.charactor.maker.core.utils.state.HandleState
@@ -51,10 +51,13 @@ class DataViewModel() : ViewModel() {
             val timeStart = System.currentTimeMillis()
 
             val list = withContext(Dispatchers.IO) {
-                // Lần đầu vào app -> Load data Asset -> Lưu file internal
-                if (!MediaHelper.checkFileInternal(context, ValueKey.DATA_FILE_INTERNAL)) {
-                    Log.d("DATA_LOAD", "📦 First launch - loading data from assets...")
+                val pref = SharePreferenceHelper(context)
+                val needsReload = !MediaHelper.checkFileInternal(context, ValueKey.DATA_FILE_INTERNAL)
+                        || pref.getDataSchemaVersion() < ValueKey.DATA_SCHEMA_VERSION
+                if (needsReload) {
+                    Log.d("DATA_LOAD", "📦 Loading data from assets (schema v${ValueKey.DATA_SCHEMA_VERSION})...")
                     AssetHelper.getDataFromAsset(context)
+                    pref.setDataSchemaVersion(ValueKey.DATA_SCHEMA_VERSION)
                 } else {
                     Log.d("DATA_LOAD", "📦 Loading local data from internal storage...")
                 }
@@ -224,96 +227,60 @@ class DataViewModel() : ViewModel() {
     fun getDataAPI(context: Context, dataList: ArrayList<DataAPI>) {
         Log.d("API_PARSE", "========================================")
         Log.d("API_PARSE", "🔄 PARSING API DATA...")
-        Log.d("API_PARSE", "Characters to parse: ${dataList.size}")
 
         val allDataAPI: ArrayList<CustomizeModel> = arrayListOf()
-        var totalLayers = 0
-        var totalItems = 0
+        val baseDomain = if (!isFailBaseURL) DomainKey.BASE_URL else DomainKey.BASE_URL_PREVENTIVE
 
-        // Character 1, Character 2,...
-        dataList.forEachIndexed { indexCharacter, data ->
-            Log.d("API_PARSE", "")
-            Log.d("API_PARSE", "--- Character ${indexCharacter + 1}: ${data.name} ---")
-            Log.d("API_PARSE", "  Parts count: ${data.parts.size}")
+        dataList.forEach { data ->
+            // Group parts by category (data field), fallback to empty string if not set
+            val partsByCategory = data.parts.groupBy { it.data.orEmpty() }
 
-            ///public/app/ChibiMaker/1/avatar.png
-            val baseDomain = if (!isFailBaseURL) DomainKey.BASE_URL else DomainKey.BASE_URL_PREVENTIVE
-            val avatarCharacter = "$baseDomain${DomainKey.SUB_DOMAIN}/${data.name}/${DomainKey.AVATAR_CHARACTER_API}"
-            val layerList = ArrayList<LayerListModel>(data.parts.size)
+            partsByCategory.forEach { (category, parts) ->
+                val avatarCharacter = "$baseDomain${DomainKey.SUB_DOMAIN}/$category/${data.name}/${DomainKey.AVATAR_CHARACTER_API}"
+                val layerList = ArrayList<LayerListModel>(parts.size)
+                val sortedParts = parts.sortedBy { it.level }
 
-            // Sort parts by level in ascending order
-            val sortedParts = data.parts.sortedBy { it.level }
-
-            sortedParts.forEachIndexed { indexLayer, dataLayer ->
-                // Handle both "-" and "_" delimiters, similar to local asset loading
-                val layerName = if (dataLayer.parts.contains("-")) {
-                    dataLayer.parts.split("-")
-                } else {
-                    dataLayer.parts.split("_")
+                sortedParts.forEach { dataLayer ->
+                    val layerName = if (dataLayer.parts.contains("-")) dataLayer.parts.split("-") else dataLayer.parts.split("_")
+                    val positionCustom = layerName.first().toInt() - 1
+                    val positionNavigation = layerName.last().toInt() - 1
+                    val imageNavigation = "$baseDomain${DomainKey.SUB_DOMAIN}/$category/${data.name}/${dataLayer.parts}/${DomainKey.IMAGE_NAVIGATION}"
+                    val layer = getDataLayer(baseDomain, category, dataLayer, dataLayer.parts)
+                    layerList.add(LayerListModel(positionCustom, positionNavigation, imageNavigation, layer))
                 }
-                val positionCustom = layerName.first().toInt() - 1
-                val positionNavigation = layerName.last().toInt() - 1
-                val imageNavigation = "${baseDomain}${DomainKey.SUB_DOMAIN}/${data.name}/${dataLayer.parts}/${DomainKey.IMAGE_NAVIGATION}"
-                val layer = getDataLayer(baseDomain, dataLayer, dataLayer.parts)
+                layerList.sortBy { it.positionNavigation }
 
-                Log.d("API_PARSE", "    Layer ${indexLayer + 1}: ${dataLayer.parts}")
-                Log.d("API_PARSE", "      - Items: ${dataLayer.quantity}")
-                Log.d("API_PARSE", "      - Has colors: ${dataLayer.colorArray.isNotEmpty()}")
-                if (dataLayer.colorArray.isNotEmpty()) {
-                    val colorCount = dataLayer.colorArray.split(",").size
-                    Log.d("API_PARSE", "      - Color count: $colorCount")
-                }
-
-                totalItems += dataLayer.quantity
-
-                val layerListModel = LayerListModel(
-                    positionCustom = positionCustom,
-                    positionNavigation = positionNavigation,
-                    imageNavigation = imageNavigation,
-                    layer = layer
+                val characterLevel = sortedParts.minOfOrNull { it.level } ?: 100
+                allDataAPI.add(
+                    CustomizeModel(
+                        dataName = data.name,
+                        avatar = avatarCharacter,
+                        layerList = layerList,
+                        level = characterLevel,
+                        isFromAPI = true,
+                        dataType = category
+                    )
                 )
-                layerList.add(layerListModel)
+                Log.d("API_PARSE", "✅ ${data.name} [${category.ifEmpty { "no-category" }}] - ${parts.size} layers")
             }
-            layerList.sortBy { it.positionNavigation }
-            totalLayers += layerList.size
-
-            // Use the minimum level from all parts as the character level
-            val characterLevel = sortedParts.minOfOrNull { it.level } ?: 100
-
-            val dataApi = CustomizeModel(
-                dataName = data.name,
-                avatar = avatarCharacter,
-                layerList = layerList,
-                level = characterLevel,
-                isFromAPI = true
-            )
-            allDataAPI.add(dataApi)
-
-            Log.d("API_PARSE", "  ✅ Character ${data.name} parsed - Level: $characterLevel")
         }
 
         MediaHelper.writeListToFile(context, ValueKey.DATA_FILE_API_INTERNAL, allDataAPI)
-
-        Log.d("API_PARSE", "")
-        Log.d("API_PARSE", "✅ PARSING COMPLETE!")
-        Log.d("API_PARSE", "📊 Summary:")
-        Log.d("API_PARSE", "  - Total characters: ${allDataAPI.size}")
-        Log.d("API_PARSE", "  - Total layers: $totalLayers")
-        Log.d("API_PARSE", "  - Total items: $totalItems")
+        Log.d("API_PARSE", "Total API characters: ${allDataAPI.size}")
         Log.d("API_PARSE", "========================================")
     }
 
-    private fun getDataLayer(baseDomain: String, partData: PartAPI, layer: String): ArrayList<LayerModel> {
-        return if (partData.colorArray != "" || partData.colorArray.isNotEmpty()) {
-            getDataAPIColor(baseDomain, partData, layer)
+    private fun getDataLayer(baseDomain: String, category: String, partData: PartAPI, layer: String): ArrayList<LayerModel> {
+        return if (partData.colorArray.isNotEmpty()) {
+            getDataAPIColor(baseDomain, category, partData, layer)
         } else {
-            getDataAPINoColor(baseDomain, partData, layer)
+            getDataAPINoColor(baseDomain, category, partData, layer)
         }
     }
 
-    private fun getDataAPINoColor(baseDomain: String, part: PartAPI, layer: String): ArrayList<LayerModel> {
+    private fun getDataAPINoColor(baseDomain: String, category: String, part: PartAPI, layer: String): ArrayList<LayerModel> {
         val layerPath = ArrayList<LayerModel>(part.quantity)
-        val prefix = "$baseDomain${DomainKey.SUB_DOMAIN}/${part.position}/${layer}/"
+        val prefix = "$baseDomain${DomainKey.SUB_DOMAIN}/$category/${part.position}/${layer}/"
         val suffix = DomainKey.LAYER_EXTENSION
         for (i in 1..part.quantity) {
             layerPath.add(
@@ -328,10 +295,10 @@ class DataViewModel() : ViewModel() {
         return layerPath
     }
 
-    private fun getDataAPIColor(baseDomain: String, part: PartAPI, layer: String): ArrayList<LayerModel> {
+    private fun getDataAPIColor(baseDomain: String, category: String, part: PartAPI, layer: String): ArrayList<LayerModel> {
         val layerPath = ArrayList<LayerModel>(part.quantity)
         val getColorCode = part.colorArray.split(",")
-        val prefix = "$baseDomain${DomainKey.SUB_DOMAIN}/${part.position}/${layer}/"
+        val prefix = "$baseDomain${DomainKey.SUB_DOMAIN}/$category/${part.position}/${layer}/"
         val suffix = DomainKey.LAYER_EXTENSION
 
         for (i in 1..part.quantity) {

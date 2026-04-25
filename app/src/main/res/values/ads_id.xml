@@ -11,6 +11,9 @@
     <string name="native_cl_category" translatable="false">ca-app-pub-3940256099942544/2247696110</string>
     <string name="native_cl_my_creation" translatable="false">ca-app-pub-3940256099942544/2247696110</string>
     <string name="native_cl_bg" translatable="false">ca-app-pub-3940256099942544/2247696110</string>
+    <string name="native_chooseAnimal" translatable="false">ca-app-pub-3940256099942544/2247696110</string>
+    <string name="native_cl_chooseAnimal" translatable="false">ca-app-pub-3940256099942544/2247696110</string>
+
     <string name="native_category" translatable="false">ca-app-pub-3940256099942544/2247696110</string>
     <string name="native_creation" translatable="false">ca-app-pub-3940256099942544/2247696110</string>
     <string name="native_dialog_custom" translatable="false">ca-app-pub-3940256099942544/2247696110</string>

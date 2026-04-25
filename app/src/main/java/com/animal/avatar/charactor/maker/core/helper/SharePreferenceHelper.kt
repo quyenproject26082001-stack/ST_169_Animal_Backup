@@ -8,6 +8,7 @@ import com.animal.avatar.charactor.maker.core.utils.key.PermissionKey.QUANTITY_U
 import com.animal.avatar.charactor.maker.core.utils.key.PermissionKey.STORAGE_KEY
 import com.animal.avatar.charactor.maker.core.utils.key.SharePreferenceKey
 import com.animal.avatar.charactor.maker.core.utils.key.SharePreferenceKey.COUNT_BACK_KEY
+import com.animal.avatar.charactor.maker.core.utils.key.SharePreferenceKey.DATA_SCHEMA_VERSION_KEY
 import com.animal.avatar.charactor.maker.core.utils.key.SharePreferenceKey.FIRST_LANG_KEY
 import com.animal.avatar.charactor.maker.core.utils.key.SharePreferenceKey.FIRST_PERMISSION_KEY
 import com.animal.avatar.charactor.maker.core.utils.key.SharePreferenceKey.KEY_LANGUAGE
@@ -118,5 +119,11 @@ class SharePreferenceHelper(val context: Context) {
         val json = Gson().toJson(count)
         editor.putString(QUANTITY_UNZIPPED, json)
         editor.apply()
+    }
+
+    fun getDataSchemaVersion(): Int = preferences.getInt(DATA_SCHEMA_VERSION_KEY, 1)
+
+    fun setDataSchemaVersion(version: Int) {
+        preferences.edit().putInt(DATA_SCHEMA_VERSION_KEY, version).apply()
     }
 }

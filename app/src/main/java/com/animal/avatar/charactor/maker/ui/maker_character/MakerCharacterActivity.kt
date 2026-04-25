@@ -4,6 +4,7 @@ import android.view.LayoutInflater
 import com.animal.avatar.charactor.maker.R
 import com.animal.avatar.charactor.maker.core.base.BaseActivity
 import com.animal.avatar.charactor.maker.core.extensions.handleBackLeftToRight
+import com.animal.avatar.charactor.maker.core.extensions.loadNativeCollabAds
 import com.animal.avatar.charactor.maker.core.extensions.select
 import com.animal.avatar.charactor.maker.core.extensions.setImageActionBar
 import com.animal.avatar.charactor.maker.core.extensions.setTextActionBar
@@ -27,19 +28,19 @@ class MakerCharacterActivity : BaseActivity<ActivityMakerCharacterBinding>() {
         binding.apply {
             actionBar.btnActionBarLeft.tap { showInterAll { handleBackLeftToRight() } }
             btnCatMaker.tap(800) {
-                startIntentRightToLeft(ChooseCharacterActivity::class.java, IntentKey.DATA_TYPE_KEY, IntentKey.DATA_TYPE_CAT)
+                showInterAll {  startIntentRightToLeft(ChooseCharacterActivity::class.java, IntentKey.DATA_TYPE_KEY, IntentKey.DATA_TYPE_CAT)}
             }
             btnDragonMaker.tap(800) {
-                startIntentRightToLeft(ChooseCharacterActivity::class.java, IntentKey.DATA_TYPE_KEY, IntentKey.DATA_TYPE_DRAGON)
+                showInterAll {  startIntentRightToLeft(ChooseCharacterActivity::class.java, IntentKey.DATA_TYPE_KEY, IntentKey.DATA_TYPE_DRAGON)}
             }
             btnDogMaker.tap(800) {
-                startIntentRightToLeft(ChooseCharacterActivity::class.java, IntentKey.DATA_TYPE_KEY, IntentKey.DATA_TYPE_DOG)
+                showInterAll {  startIntentRightToLeft(ChooseCharacterActivity::class.java, IntentKey.DATA_TYPE_KEY, IntentKey.DATA_TYPE_DOG)}
             }
             btnPonyMaker.tap(800) {
-                startIntentRightToLeft(ChooseCharacterActivity::class.java, IntentKey.DATA_TYPE_KEY, IntentKey.DATA_TYPE_PONY)
+                showInterAll {  startIntentRightToLeft(ChooseCharacterActivity::class.java, IntentKey.DATA_TYPE_KEY, IntentKey.DATA_TYPE_PONY)}
             }
             btnAnimalMaker.tap(800) {
-                startIntentRightToLeft(ChooseCharacterActivity::class.java, IntentKey.DATA_TYPE_KEY, IntentKey.DATA_TYPE_ANIMAL)
+                showInterAll {  startIntentRightToLeft(ChooseCharacterActivity::class.java, IntentKey.DATA_TYPE_KEY, IntentKey.DATA_TYPE_ANIMAL)}
             }
         }
     }
@@ -52,5 +53,21 @@ class MakerCharacterActivity : BaseActivity<ActivityMakerCharacterBinding>() {
         }
     }
 
-    override fun initAds() {}
+    override fun initAds() {
+        loadNativeCollabAds(R.string.native_cl_chooseAnimal, binding.flNativeCollab, )
+        Admob.getInstance().loadNativeAd(
+            this,
+            getString(R.string.native_chooseAnimal),
+            binding.nativeAds,
+            R.layout.ads_native_banner
+        )
+    }
+
+    override fun onRestart() {
+        super.onRestart()
+        loadNativeCollabAds(R.string.native_cl_chooseAnimal, binding.flNativeCollab, )
+
+    }
+
+
 }

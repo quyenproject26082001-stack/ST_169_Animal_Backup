@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Color
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.viewpager2.widget.ViewPager2
 import com.lvt.ads.util.Admob
@@ -39,27 +40,10 @@ class IntroActivity : BaseActivity<ActivityIntroBinding>() {
                 super.onPageSelected(position)
                 val params = binding.btnNext.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
 
-                if (position == 0) {
-                    binding.nativeAds.gone()
-                    // Set lại width về 100dp
-                    params.width = ViewGroup.LayoutParams.MATCH_PARENT
-                    params.height = (48 * resources.displayMetrics.density).toInt()
-                    params.bottomMargin = (5 * resources.displayMetrics.density).toInt()
-                    params.marginEnd = (5 * resources.displayMetrics.density).toInt()
-
-                    // Chiều cao
-                    binding.btnNext.layoutParams = params
-                    binding.btnNext.setTextColor(resources.getColor(R.color.white, null))
-                    binding.btnNext.setBackgroundResource(R.drawable.bg_next_button)
+                if (position == 1) {
+                    binding.nativeAds.visibility = View.GONE
                 } else {
-                    binding.nativeAds.visible()
-                    // Đổi sang wrap_content
-                    params.width = ViewGroup.LayoutParams.WRAP_CONTENT
-                    params.marginEnd = (16 * resources.displayMetrics.density).toInt()
-                    params.bottomMargin = (0 * resources.displayMetrics.density).toInt()
-                    binding.btnNext.layoutParams = params
-                    binding.btnNext.setTextColor(Color.parseColor("#FF005C"))
-                    binding.btnNext.background = null
+                    binding.nativeAds.visibility = View.VISIBLE
                 }
             }
         })
