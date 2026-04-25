@@ -99,6 +99,11 @@
             android:screenOrientation="portrait" />
 
         <activity
+            android:name=".ui.maker_character.MakerCharacterActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
             android:name=".ui.SettingsActivity"
             android:exported="false"
             android:screenOrientation="portrait" />

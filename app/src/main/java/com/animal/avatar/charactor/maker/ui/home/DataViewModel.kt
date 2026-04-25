@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.animal.avatar.charactor.maker.core.helper.AssetHelper
 import com.animal.avatar.charactor.maker.core.helper.InternetHelper
 import com.animal.avatar.charactor.maker.core.helper.MediaHelper
+import com.animal.avatar.charactor.maker.core.utils.key.AssetsKey
 import com.animal.avatar.charactor.maker.core.service.RetrofitClient
 import com.animal.avatar.charactor.maker.core.service.RetrofitPreventive
 import com.animal.avatar.charactor.maker.core.utils.DataLocal.isFailBaseURL
@@ -108,6 +109,42 @@ class DataViewModel() : ViewModel() {
         if (_allData.value.isEmpty()) {
             saveAndReadData(context)
         }
+    }
+
+    fun loadDataByType(context: Context, dataType: Int) {
+        viewModelScope.launch {
+            val list = withContext(Dispatchers.IO) {
+                val category = dataTypeToCategory(dataType)
+                val localData = if (category.isNotEmpty()) {
+                    AssetHelper.getDataFromFolder(
+                        context,
+                        folderPath = "${AssetsKey.DATA}/$category",
+                        assetPrefix = "${AssetsKey.DATA_ASSET}$category/",
+                        dataType = category
+                    )
+                } else arrayListOf()
+
+                val apiData = MediaHelper.readListFromFile<CustomizeModel>(context, ValueKey.DATA_FILE_API_INTERNAL)
+                    ?.filter { it.dataType == category || it.dataType.isEmpty() }
+                    ?.toCollection(ArrayList()) ?: arrayListOf()
+
+                val combined = ArrayList<CustomizeModel>(localData.size + apiData.size)
+                combined.addAll(localData)
+                combined.addAll(apiData)
+                combined.sortBy { it.level }
+                combined
+            }
+            _allData.value = list
+        }
+    }
+
+    private fun dataTypeToCategory(dataType: Int): String = when (dataType) {
+        1 -> "Cat"
+        2 -> "Dragon"
+        3 -> "Dog"
+        4 -> "Pony"
+        5 -> "Animal"
+        else -> ""
     }
 
     fun getAllParts(context: Context): Flow<HandleState> = flow {

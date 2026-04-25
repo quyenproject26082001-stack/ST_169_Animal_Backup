@@ -9,7 +9,7 @@ object ValueKey {
     const val HEIGHT_BITMAP = 512
     const val WIDTH_BITMAP = 512
     const val POSITION_API = 1
-    const val DATA_FILE_INTERNAL = "data_json.txt"
+    const val DATA_FILE_INTERNAL = "data_json_v2.txt"
     const val DATA_FILE_API_INTERNAL = "data_api_json.txt"
     const val SUGGESTION_FILE_INTERNAL = "suggestion_json.txt"
     const val EDIT_FILE_INTERNAL = "data_edit.json"

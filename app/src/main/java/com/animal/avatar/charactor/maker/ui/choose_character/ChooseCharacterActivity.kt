@@ -23,7 +23,6 @@ import com.animal.avatar.charactor.maker.core.extensions.startIntentRightToLeft
 import com.animal.avatar.charactor.maker.core.extensions.visible
 import com.animal.avatar.charactor.maker.core.helper.InternetHelper
 import com.animal.avatar.charactor.maker.core.utils.key.IntentKey
-import com.animal.avatar.charactor.maker.core.utils.key.ValueKey
 import com.animal.avatar.charactor.maker.core.utils.state.HandleState
 import com.animal.avatar.charactor.maker.databinding.ActivityChooseCharacterBinding
 import kotlinx.coroutines.launch
@@ -32,19 +31,23 @@ class ChooseCharacterActivity : BaseActivity<ActivityChooseCharacterBinding>() {
     private val viewModel: ChooseCharacterViewModel by viewModels()
     private val dataViewModel: DataViewModel by viewModels()
     private val chooseCharacterAdapter by lazy { ChooseCharacterAdapter() }
-    private var hasCheckedInternet = false  // Flag to check internet only once
+    private var hasCheckedInternet = false
+    private var currentDataType = IntentKey.DATA_TYPE_DEFAULT
+
     override fun setViewBinding(): ActivityChooseCharacterBinding {
         return ActivityChooseCharacterBinding.inflate(LayoutInflater.from(this))
     }
 
     override fun initView() {
-        // Show loading when activity starts
-        lifecycleScope.launch {
-            showLoading()
-        }
+        lifecycleScope.launch { showLoading() }
         initRcv()
         binding.actionBar.tvCenter.select()
-        dataViewModel.ensureData(this)
+        currentDataType = intent.getIntExtra(IntentKey.DATA_TYPE_KEY, IntentKey.DATA_TYPE_DEFAULT)
+        if (currentDataType != IntentKey.DATA_TYPE_DEFAULT) {
+            dataViewModel.loadDataByType(this, currentDataType)
+        } else {
+            dataViewModel.ensureData(this)
+        }
     }
 
     override fun dataObservable() {
@@ -164,7 +167,15 @@ class ChooseCharacterActivity : BaseActivity<ActivityChooseCharacterBinding>() {
     override fun initActionBar() {
         binding.actionBar.apply {
             setImageActionBar(btnActionBarLeft, R.drawable.ic_back)
-            setTextActionBar(tvCenter, getString(R.string.category))
+            val title = when (currentDataType) {
+                IntentKey.DATA_TYPE_CAT -> getString(R.string.cat_maker)
+                IntentKey.DATA_TYPE_DRAGON -> getString(R.string.dragon_maker)
+                IntentKey.DATA_TYPE_DOG -> getString(R.string.dog_maker)
+                IntentKey.DATA_TYPE_PONY -> getString(R.string.pony_maker)
+                IntentKey.DATA_TYPE_ANIMAL -> getString(R.string.animal_maker)
+                else -> getString(R.string.category)
+            }
+            setTextActionBar(tvCenter, title)
         }
     }
 

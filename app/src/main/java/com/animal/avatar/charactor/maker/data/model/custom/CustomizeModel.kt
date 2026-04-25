@@ -4,6 +4,7 @@ data class CustomizeModel(
     val dataName: String = "",
     val avatar: String = "",
     val layerList: ArrayList<LayerListModel> = arrayListOf(),
-    val level: Int = 100,  // Default level for local assets
-    val isFromAPI: Boolean = false  // Flag to identify if data is from API
+    val level: Int = 100,
+    val isFromAPI: Boolean = false,
+    val dataType: String = ""  // category name: "Animal", "Cat", "Dog", etc.
 )

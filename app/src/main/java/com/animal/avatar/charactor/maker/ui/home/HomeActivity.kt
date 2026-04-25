@@ -21,7 +21,7 @@ import com.animal.avatar.charactor.maker.core.utils.state.RateState
 import com.animal.avatar.charactor.maker.databinding.ActivityHomeBinding
 import com.animal.avatar.charactor.maker.ui.SettingsActivity
 import com.animal.avatar.charactor.maker.ui.my_creation.MyCreationActivity
-import com.animal.avatar.charactor.maker.ui.choose_character.ChooseCharacterActivity
+import com.animal.avatar.charactor.maker.ui.maker_character.MakerCharacterActivity
 import com.animal.avatar.charactor.maker.core.extensions.tap
 import com.animal.avatar.charactor.maker.core.extensions.strings
 import com.animal.avatar.charactor.maker.ui.random_character.RandomCharacterActivity
@@ -53,7 +53,7 @@ class HomeActivity : BaseActivity<ActivityHomeBinding>() {
     override fun viewListener() {
         binding.apply {
             actionBar.btnActionBarRight.tap(2000) { startIntentRightToLeft(SettingsActivity::class.java) }
-            btnCreate.tap(2000) { startIntentRightToLeft(ChooseCharacterActivity::class.java) }
+            btnCreate.tap(2000) { startIntentRightToLeft(MakerCharacterActivity::class.java) }
             btnMyAlbum.tap(2000) { showInterAll { startIntentRightToLeft(MyCreationActivity::class.java) } }
             btnQuickMaker.tap(2000) { showInterAll{startIntentRightToLeft(RandomCharacterActivity::class.java)} }
         }

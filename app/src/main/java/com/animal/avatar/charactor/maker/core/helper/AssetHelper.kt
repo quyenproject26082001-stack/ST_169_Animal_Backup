@@ -90,111 +90,98 @@ object AssetHelper {
 
     // ---------------------------------------------------------------------------------------------
 
-    fun getDataFromAsset(context: Context) : ArrayList<CustomizeModel> {
+    fun getDataFromAsset(context: Context): ArrayList<CustomizeModel> {
         val start = System.currentTimeMillis()
+        val customList = ArrayList<CustomizeModel>()
+        val categories = context.assets.list(AssetsKey.DATA) ?: return customList
+
+        categories.forEach { category ->
+            val categoryList = getDataFromFolder(
+                context,
+                folderPath = "${AssetsKey.DATA}/$category",
+                assetPrefix = "${AssetsKey.DATA_ASSET}$category/",
+                dataType = category
+            )
+            customList.addAll(categoryList)
+            Log.d("nbhieu", "Loaded ${categoryList.size} characters from category: $category")
+        }
+
+        MediaHelper.writeListToFile(context, ValueKey.DATA_FILE_INTERNAL, customList)
+        Log.d("nbhieu", "count time: ${System.currentTimeMillis() - start}")
+        return customList
+    }
+
+    fun getDataFromFolder(context: Context, folderPath: String, assetPrefix: String, dataType: String = ""): ArrayList<CustomizeModel> {
         val customList = ArrayList<CustomizeModel>()
         val assetManager = context.assets
 
-        // "data1, character_2,..."
-        val characterList = assetManager.list(AssetsKey.DATA)
-        val sortedCharacter = MediaHelper.sortAsset(characterList)
-        Log.d("nbhieu", "----------------------------------------------------------------------------------")
+        val characterList = assetManager.list(folderPath) ?: return customList
+        val sortedCharacter = MediaHelper.sortAsset(characterList) ?: return customList
 
-        sortedCharacter!!.forEach {
-            Log.d("nbhieu", "sortedCharacter: $it")
-        }
-
-        Log.d("nbhieu", "----------------------------------------------------------------------------------")
-
-        sortedCharacter.forEachIndexed { indexCharacter, character ->
+        sortedCharacter.forEach { character ->
             val layerListModelList = ArrayList<LayerListModel>()
-            Log.d("nbhieu", "indexCharacter: $indexCharacter")
-            // "1.30, 2.4, 3.1, 4.22,..."
-            val layer = assetManager.list("${AssetsKey.DATA}/${character}")
+            val layer = assetManager.list("$folderPath/$character")
             val allItems = MediaHelper.sortAsset(layer)?.toCollection(ArrayList()) ?: arrayListOf()
 
-            // Tìm avatar file
             val avatarFile = allItems.find {
                 it.equals("avatar.png", ignoreCase = true) ||
                 it.equals("avatar.jpg", ignoreCase = true) ||
                 it.equals("avatar.webp", ignoreCase = true)
             }
 
-            // Filter chỉ lấy các folder layer có format đúng (dạng 1-13 hoặc 1_3)
             val sortedLayer = allItems.filter { item ->
                 val hasHyphen = item.contains("-")
                 val hasUnderscore = item.contains("_")
-
                 if (hasHyphen) {
                     val parts = item.split("-")
                     parts.size == 2 && parts[0].toIntOrNull() != null && parts[1].toIntOrNull() != null
                 } else if (hasUnderscore) {
                     val parts = item.split("_")
                     parts.size == 2 && parts[0].toIntOrNull() != null && parts[1].toIntOrNull() != null
-                } else {
-                    false
-                }
+                } else false
             }.toCollection(ArrayList())
 
-            val avatar = "${AssetsKey.DATA_ASSET}${character}/${avatarFile ?: "avatar.png"}"
-            Log.d("nbhieu", "avatar: $avatar")
+            val avatar = "$assetPrefix$character/${avatarFile ?: "avatar.png"}"
 
-            Log.d("nbhieu", "----------------------------------------------------------------------------------")
-
-            for (i in 0 until sortedLayer.size) {
-                // Tách 1 và 30 từ "1-30" hoặc "1_30"
+            for (i in sortedLayer.indices) {
                 val layerName = sortedLayer[i]
-                val position = if (layerName.contains("-")) {
-                    layerName.split("-")
-                } else {
-                    layerName.split("_")
-                }
+                val position = if (layerName.contains("-")) layerName.split("-") else layerName.split("_")
                 val positionCustom = position[0].toInt() - 1
                 val positionNavigation = position[1].toInt() - 1
 
-                // Lấy folder màu hoặc lấy ảnh nếu không có màu, lấy ảnh navigation
-                // data/data1/1.30
-                val folderOrImageList = assetManager.list("${AssetsKey.DATA}/${character}/${sortedLayer[i]}")
-                val folderOrImageSortedList =
-                    MediaHelper.sortAsset(folderOrImageList)?.toCollection(ArrayList()) ?: arrayListOf()
-                //Lấy navigation
-                val navigationImage =
-                    "${AssetsKey.DATA_ASSET}${character}/${sortedLayer[i]}/${folderOrImageSortedList.last()}"
+                val folderOrImageList = assetManager.list("$folderPath/$character/${sortedLayer[i]}")
+                val folderOrImageSortedList = MediaHelper.sortAsset(folderOrImageList)?.toCollection(ArrayList()) ?: arrayListOf()
+                if (folderOrImageSortedList.isEmpty()) continue
+
+                val navigationImage = "$assetPrefix$character/${sortedLayer[i]}/${folderOrImageSortedList.last()}"
                 folderOrImageSortedList.removeAt(folderOrImageSortedList.size - 1)
 
-                // Tách thumb files ra khỏi list, lấy full path, sort theo index
                 val thumbFiles = folderOrImageSortedList.filter { it.startsWith("thumb_") }
                     .sortedBy { it.removePrefix("thumb_").removeSuffix(".png").toIntOrNull() ?: 0 }
-                    .map { "${AssetsKey.DATA_ASSET}$character/${sortedLayer[i]}/$it" }
+                    .map { "$assetPrefix$character/${sortedLayer[i]}/$it" }
                 folderOrImageSortedList.removeAll { it.startsWith("thumb_") }
 
-                // Nếu không có folder -> không có màu
-                val layer = if (AssetsKey.FIRST_IMAGE.any { it in folderOrImageSortedList[0] }) {
-                    getDataNoColor(character, folderOrImageSortedList, sortedLayer[i], thumbFiles)
+                if (folderOrImageSortedList.isEmpty()) continue
+
+                val layerData = if (AssetsKey.FIRST_IMAGE.any { it in folderOrImageSortedList[0] }) {
+                    getDataNoColor(assetPrefix, character, folderOrImageSortedList, sortedLayer[i], thumbFiles)
                 } else {
-                    getDataColor(assetManager, character, folderOrImageSortedList, sortedLayer[i], thumbFiles)
+                    getDataColor(assetManager, folderPath, assetPrefix, character, folderOrImageSortedList, sortedLayer[i], thumbFiles)
                 }
-                val layerListModel = LayerListModel(positionCustom, positionNavigation, navigationImage, layer)
-                layerListModelList.add(layerListModel)
+                layerListModelList.add(LayerListModel(positionCustom, positionNavigation, navigationImage, layerData))
             }
             layerListModelList.sortBy { it.positionNavigation }
-            customList.add(CustomizeModel(character, avatar, layerListModelList, level = 100))
-            Log.d("nbhieu", "----------------------------------------------------------------------------------")
+            customList.add(CustomizeModel(character, avatar, layerListModelList, level = 100, dataType = dataType))
         }
-        MediaHelper.writeListToFile(context, ValueKey.DATA_FILE_INTERNAL, customList)
-        customList.forEach {
-            Log.d("nbhieu", "customList: ${it}")
-        }
-        Log.d("nbhieu", "count time: ${System.currentTimeMillis() - start}")
         return customList
     }
 
-    private fun getDataNoColor(character: String, filesList: List<String>, folder: String, thumbFiles: List<String> = emptyList()): ArrayList<LayerModel> {
+    private fun getDataNoColor(assetPrefix: String, character: String, filesList: List<String>, folder: String, thumbFiles: List<String> = emptyList()): ArrayList<LayerModel> {
         val layerPath = ArrayList<LayerModel>()
         filesList.forEachIndexed { index, fileName ->
             layerPath.add(
                 LayerModel(
-                    image = "${AssetsKey.DATA_ASSET}$character/$folder/$fileName",
+                    image = "$assetPrefix$character/$folder/$fileName",
                     isMoreColors = false,
                     listColor = arrayListOf(),
                     thumb = thumbFiles.getOrElse(index) { "" }
@@ -205,20 +192,18 @@ object AssetHelper {
     }
 
     private fun getDataColor(
-        assetManager: AssetManager, character: String, folderList: List<String>, folder: String, thumbFiles: List<String> = emptyList()
+        assetManager: AssetManager, folderPath: String, assetPrefix: String, character: String, folderList: List<String>, folder: String, thumbFiles: List<String> = emptyList()
     ): ArrayList<LayerModel> {
         val colorNames = folderList.map { "#$it" }
         val fileList = folderList.map { colorFolder ->
-            assetManager.list("${AssetsKey.DATA}/$character/$folder/$colorFolder")?.let {
+            assetManager.list("$folderPath/$character/$folder/$colorFolder")?.let {
                 MediaHelper.sortAsset(it)
-            }?.map { "${AssetsKey.DATA_ASSET}$character/$folder/$colorFolder/$it" } ?: emptyList()
+            }?.map { "$assetPrefix$character/$folder/$colorFolder/$it" } ?: emptyList()
         }
 
-        // Lấy số file TỐI THIỂU để tránh IndexOutOfBoundsException
         val minSize = fileList.minOfOrNull { it.size } ?: 0
         if (minSize == 0) return arrayListOf()
 
-        // Khởi tạo danh sách màu và ghép danh sách file theo index
         val colorList = Array(minSize) { index ->
             Array(folderList.size) { folderIndex ->
                 ColorModel(color = colorNames[folderIndex], path = fileList[folderIndex][index])
