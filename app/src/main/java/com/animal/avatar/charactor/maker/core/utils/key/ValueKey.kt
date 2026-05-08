@@ -5,7 +5,7 @@ object ValueKey {
     const val DOWNLOAD_ALBUM_BACKGROUND = "Image Background"
     const val RANDOM_TEMP_ALBUM = "RANDOM_TEMP_ALBUM"
 
-    const val RANDOM_QUANTITY = 4
+    const val RANDOM_QUANTITY = 3
     const val HEIGHT_BITMAP = 512
     const val WIDTH_BITMAP = 512
     const val POSITION_API = 1

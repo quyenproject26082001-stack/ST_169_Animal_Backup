@@ -1,0 +1,270 @@
+====================================================================
+TÓM TẮT SESSION - ST169 PonyMaker4
+====================================================================
+
+== BUG 1: NullPointerException khi nhấn Back từ ViewActivity ==
+
+Crash:
+  BaseActivity.getBinding() → _binding!! → null → NPE
+  ViewActivity.resetMyCreationSelectionMode() → myCreationActivity.exitSelectionMode()
+
+Nguyên nhân:
+  MyCreationActivity đã bị destroy (_binding = null) nhưng WeakReference
+  trong instanceRef chưa bị GC dọn → getInstance() vẫn trả về instance đó
+  → gọi exitSelectionMode() → binding!! → crash
+
+Fix đã apply (Cách 2 + Cách 3):
+  1. MyCreationActivity.onDestroy(): thêm instanceRef = null
+     → getInstance() trả về null ngay khi activity bị destroy
+  2. ViewActivity.resetMyCreationSelectionMode(): thêm guard
+     if (myCreationActivity != null && !myCreationActivity.isDestroyed && !myCreationActivity.isFinishing)
+     → không gọi gì nếu activity đã dead
+
+File đã sửa:
+  - MyCreationActivity.kt: thêm onDestroy() clear instanceRef
+  - ViewActivity.kt: thêm isDestroyed + isFinishing check
+
+--------------------------------------------------------------------
+
+== BUG 2: OutOfMemoryError khi ghi data (Gson.toJson) ==
+
+Crash:
+  MediaHelper.writeListToFile → Gson().toJson(list) → build string 5MB trong RAM → OOM
+
+Nguyên nhân:
+  Gson().toJson(list) load toàn bộ list thành 1 string khổng lồ vào RAM
+  trước khi ghi xuống file → RAM phải chứa list gốc + string JSON cùng lúc
+
+Fix đã apply:
+  writeListToFile: dùng streaming writer thay vì build string trung gian
+    val type = object : TypeToken<List<T>>() {}.type
+    context.openFileOutput(fileName, Context.MODE_PRIVATE).bufferedWriter().use { writer ->
+        Gson().toJson(list, type, writer)
+    }
+
+  readListFromFile: tương tự dùng streaming reader
+    context.openFileInput(fileName).bufferedReader().use { reader ->
+        Gson().fromJson<List<T>>(reader, type) ?: emptyList()
+    }
+
+File đã sửa:
+  - MediaHelper.kt: writeListToFile + readListFromFile
+
+--------------------------------------------------------------------
+
+== BUG 3: OutOfMemoryError khi đọc data_edit.json (heap gần đầy) ==
+
+Crash:
+  MyAvatarViewModel.loadMyAvatar() → readListFromFile<SuggestionModel>
+  → heap chỉ còn <1% → OOM
+
+Nguyên nhân:
+  loadMyAvatar() được gọi trong onStart() của MyAvatarFragment
+  → chạy mỗi lần quay về từ ViewActivity
+  → lúc đó stack có: ViewActivity + MyCreationActivity + allDataAPI đang chiếm RAM
+  → đọc thêm toàn bộ List<SuggestionModel> (rất nặng vì nested list lồng list)
+  → heap vỡ
+
+SuggestionModel nặng vì chứa:
+  var itemNavList      : ArrayList<ArrayList<ItemNavCustomModel>>
+  var colorItemNavList : ArrayList<ArrayList<ItemColorModel>>
+
+Nhưng loadMyAvatar() chỉ dùng mỗi pathInternalEdit để hiển thị danh sách
+→ load toàn bộ data thừa không cần thiết
+
+Fix đã apply (tách 2 file):
+  - data_edit.json        → vẫn lưu full List<SuggestionModel> (dùng cho edit/delete)
+  - data_edit_paths.json  → chỉ lưu List<String> (đường dẫn) → dùng cho loadMyAvatar()
+
+  loadMyAvatar() đọc data_edit_paths.json thay vì data_edit.json → nhẹ, không OOM
+
+  Migration cho user cũ (chưa có data_edit_paths.json):
+    if (pathList.isEmpty()) → đọc data_edit.json 1 lần → tạo data_edit_paths.json
+
+  Mọi chỗ ghi data_edit.json đều sync thêm data_edit_paths.json:
+    - addCharacterToEditList()   → CustomizeCharacterViewModel
+    - updateEditCharacter()      → CustomizeCharacterViewModel
+    - deleteItem()               → MyAvatarViewModel
+    - deleteFile()               → ViewViewModel
+
+Constant mới thêm vào ValueKey.kt:
+  const val MY_CREATION_PATHS_FILE = "data_edit_paths.json"
+
+File đã sửa:
+  - ValueKey.kt
+  - MyAvatarViewModel.kt
+  - CustomizeCharacterViewModel.kt
+  - ViewViewModel.kt
+
+--------------------------------------------------------------------
+
+== BUG 4: OutOfMemoryError từ Google Ads SDK ==
+
+Crash:
+  Thread: GoogleApiHandler
+  Stack trace toàn bộ là Google Ads SDK (obfuscated: m84.bse, m84.bsh...)
+
+Nguyên nhân:
+  Không phải do code app, Google Ads SDK là nạn nhân cuối cùng
+  khi heap đã gần đầy hoàn toàn (<1% free)
+  Heap bị ngốn bởi thứ khác trước đó
+
+Kết quả điều tra (Android Profiler Heap Dump):
+  - SuggestionModel: không còn trong RAM → fix Bug 3 có hiệu quả ✅
+  - CustomizeModel: 20 instances, Retained Size 368 bytes → không phải thủ phạm
+  - Heap ~8MB chủ yếu từ Ad SDK (Google Ads, IronSource, Chromium WebView)
+  - Chromium: 29 Page instances → mỗi ad dùng 1 WebView page
+  - AdsUtils: 1 instance, Retained Size ~1.2MB → ad SDK cache nặng
+
+--------------------------------------------------------------------
+
+== BUG 5: Memory Leak - Activity không được GC (70-108 leaks) ==
+
+Phát hiện qua Profiler:
+  SuccessActivity:          8 instances bị leak
+  ViewActivity:            26 instances bị leak
+  CustomizeCharActivity:    2 instances bị leak
+  MyCreationActivity:       2 instances bị leak
+  (tất cả activity dùng showInterAll đều bị leak)
+
+Nguyên nhân:
+  Chuỗi giữ nhau:
+  Admob.getInstance() → giữ InterCallback
+  InterCallback       → giữ onFinishInter lambda
+  lambda              → giữ strong reference đến Activity (this@SuccessActivity)
+  Activity            → giữ binding, views, data, bitmap...
+
+  Admob SDK (com.lvt.ads) không giải phóng InterCallback sau khi ad xong
+  → toàn bộ chuỗi bị giữ mãi trong RAM
+  → mỗi lần gọi showInterAll = 1 Activity bị leak
+
+Fix đã apply (WeakReference trong AdsExtension.kt):
+  val weakRef = WeakReference(this)
+  Admob.getInstance().showInterAll(this, object : InterCallback() {
+      override fun onNextAction() {
+          super.onNextAction()
+          if (weakRef.get() != null) onFinishInter.invoke()
+      }
+  })
+
+Kết quả sau fix:
+  Retained Size mỗi SuccessActivity: 8,221 → 396 bytes (giảm 96%) ✅
+  Tổng Retained Size: 63,329 → 30,559 bytes (giảm 52%) ✅
+  Instance count vẫn cao vì Admob giữ this trực tiếp (giới hạn của SDK)
+
+File đã sửa:
+  - AdsExtension.kt: WeakReference trong showInterAll + showInterAllWait
+
+--------------------------------------------------------------------
+
+== CẢI THIỆN: onTrimMemory - Dọn Glide cache khi RAM thấp ==
+
+Vấn đề:
+  Native Size heap lên đến 88MB, phần lớn là ảnh Glide cache
+  Khi RAM hệ thống thấp, app không tự dọn → OOM
+
+Fix đã apply (App.kt):
+  override fun onTrimMemory(level: Int) {
+      super.onTrimMemory(level)
+      when (level) {
+          TRIM_MEMORY_MODERATE,
+          TRIM_MEMORY_RUNNING_LOW,
+          TRIM_MEMORY_RUNNING_CRITICAL -> Glide.get(this).clearMemory()
+      }
+  }
+
+File đã sửa:
+  - App.kt: thêm onTrimMemory + import Glide + ComponentCallbacks2
+
+--------------------------------------------------------------------
+
+== SESSION MỚI: Port fix từ st217 + Tối ưu RandomCharacter ==
+
+--- Fix 1: Flash sai loại data ở ChooseCharacterActivity ---
+
+Nguyên nhân:
+  loadDataByType ghi vào shared _allData (companion object)
+  → vào Pony rồi vào Dragon thì Dragon hiện nháy Pony trước
+
+Fix: DataViewModel.kt
+  - Thêm per-instance _filteredData StateFlow
+  - loadDataByType ghi vào _filteredData thay vì _allData
+  ChooseCharacterActivity.kt
+  - observe filteredData khi type != DEFAULT
+  - onItemClick lấy data từ filteredData.value
+  CustomizeCharacterActivity.kt
+  - observe filteredData khi dataType != DEFAULT
+
+--- Fix 2: OOM — DataViewModel load JSON nhiều lần ---
+
+Fix: DataViewModel.kt
+  - companion object với _sharedData → chỉ load JSON 1 lần toàn process
+  - Thêm ensureDataFromCache(): load local, không gọi API
+
+--- Fix 3: OOM khi back từ ViewActivity ---
+
+Fix: ViewActivity.kt
+  - ensureData → ensureDataFromCache trong initView()
+  - Thêm cleanup trong handleBack(): removeAllViews() + clearMemory()
+  - Thêm wait pattern trong handleEditClick():
+    val allData = dataViewModel.allData.value.ifEmpty {
+        dataViewModel.allData.first { it.isNotEmpty() }
+    }
+
+--- Fix 4: editItem crash + null safety ---
+
+Fix: MyAvatarViewModel.kt
+  - first → firstOrNull + early return an toàn
+  - Thêm fallback tìm theo dataName/folder name khi URL match thất bại
+
+--- Fix 5: RandomCharacterAdapter — item nhảy loạn ---
+
+Fix: RandomCharacterAdapter.kt
+  - activeJobs key: Int (position) → ItemRandomCharacterBinding
+  - items[position] → item trong coroutine closure
+
+--- Fix 6: Giảm OOM — Recycle bitmap + DiskCache ---
+
+Fix: RandomCharacterAdapter.kt
+  - bitmapDefault.recycle() sau khi lấy width/height
+  - bitmap.recycle() từng layer sau khi draw
+  - combinedBitmap.recycle() sau khi save
+  - DiskCacheStrategy.DATA → layer images cached
+
+--- Fix 7: Giảm OOM — Semaphore giới hạn concurrent composite ---
+
+Fix: RandomCharacterAdapter.kt
+  - compositeSemaphore = Semaphore(2)
+  - Tối đa 2 item composite đồng thời → memory usage bounded
+  - Shimmer vẫn hiện khi đang chờ slot
+
+--- Fix 8: Comment toàn bộ log RandomCharacter ---
+
+Files: RandomCharacterActivity.kt, RandomCharacterAdapter.kt
+  - Comment toàn bộ Log.d, Log.e, dLog, eLog
+
+--------------------------------------------------------------------
+
+== TỔNG KẾT CÁC FILE ĐÃ THAY ĐỔI ==
+
+Session cũ:
+  core/utils/key/ValueKey.kt
+  core/utils/App.kt
+  core/helper/MediaHelper.kt
+  core/extensions/AdsExtension.kt
+  ui/my_creation/MyCreationActivity.kt
+  ui/my_creation/view_model/MyAvatarViewModel.kt
+  ui/customize/CustomizeCharacterViewModel.kt
+  ui/view/ViewActivity.kt
+  ui/view/ViewViewModel.kt
+
+Session mới:
+  ui/home/DataViewModel.kt
+  ui/choose_character/ChooseCharacterActivity.kt
+  ui/customize/CustomizeCharacterActivity.kt
+  ui/view/ViewActivity.kt
+  ui/my_creation/view_model/MyAvatarViewModel.kt
+  ui/random_character/RandomCharacterActivity.kt
+  ui/random_character/RandomCharacterAdapter.kt
+
+====================================================================

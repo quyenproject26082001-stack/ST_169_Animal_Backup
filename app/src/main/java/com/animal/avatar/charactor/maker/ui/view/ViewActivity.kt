@@ -58,6 +58,7 @@ import com.animal.avatar.charactor.maker.ui.my_creation.fragment.MyAvatarFragmen
 import com.animal.avatar.charactor.maker.ui.my_creation.view_model.MyAvatarViewModel
 import com.animal.avatar.charactor.maker.ui.permission.PermissionViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -73,7 +74,7 @@ class ViewActivity : BaseActivity<ActivityViewBinding>() {
     }
 
     override fun initView() {
-        dataViewModel.ensureData(this)
+        dataViewModel.ensureDataFromCache(this)
         viewModel.setPath(intent.getStringExtra(IntentKey.INTENT_KEY)!!)
         viewModel.updateStatusFrom(intent.getIntExtra(IntentKey.STATUS_KEY, ValueKey.AVATAR_TYPE))
         viewModel.setType(intent.getIntExtra(IntentKey.TYPE_KEY, ValueKey.TYPE_VIEW))
@@ -429,6 +430,9 @@ class ViewActivity : BaseActivity<ActivityViewBinding>() {
             return
         }
 
+        binding.flNativeCollab.removeAllViews()
+        Glide.get(this).clearMemory()
+
         if (viewModel.typeUI.value == ValueKey.TYPE_VIEW) {
             resetMyCreationSelectionMode()
         }
@@ -473,7 +477,10 @@ class ViewActivity : BaseActivity<ActivityViewBinding>() {
     private fun handleEditClick(pathInternal: String) {
         lifecycleScope.launch(Dispatchers.IO) {
             showLoading()
-            myAvatarViewModel.editItem(this@ViewActivity, pathInternal, dataViewModel.allData.value)
+            val allData = dataViewModel.allData.value.ifEmpty {
+                dataViewModel.allData.first { it.isNotEmpty() }
+            }
+            myAvatarViewModel.editItem(this@ViewActivity, pathInternal, allData)
 
             withContext(Dispatchers.Main) {
                 dismissLoading()

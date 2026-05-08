@@ -52,14 +52,15 @@ class ChooseCharacterActivity : BaseActivity<ActivityChooseCharacterBinding>() {
 
     override fun dataObservable() {
         lifecycleScope.launch {
-            dataViewModel.allData.collect { data ->
+            val flow = if (currentDataType != IntentKey.DATA_TYPE_DEFAULT)
+                dataViewModel.filteredData
+            else
+                dataViewModel.allData
+
+            flow.collect { data ->
                 if (data.isNotEmpty()) {
                     chooseCharacterAdapter.submitList(data)
-
-                    // Dismiss loading when data is loaded
                     dismissLoading()
-
-                    // Check if there are API characters and user has no internet
                     checkInternetForAPICharacters(data)
                 }
             }
@@ -118,8 +119,11 @@ class ChooseCharacterActivity : BaseActivity<ActivityChooseCharacterBinding>() {
             actionBar.btnActionBarLeft.tap { showInterAll { handleBackLeftToRight() } }
         }
         chooseCharacterAdapter.onItemClick = { position ->
-            // ✅ FIX: Use isFromAPI flag from character data instead of position
-            val selectedCharacter = dataViewModel.allData.value.getOrNull(position)
+            val dataSource = if (currentDataType != IntentKey.DATA_TYPE_DEFAULT)
+                dataViewModel.filteredData.value
+            else
+                dataViewModel.allData.value
+            val selectedCharacter = dataSource.getOrNull(position)
             val needsInternet = selectedCharacter?.isFromAPI ?: false
 
             // Log AdMob event with detailed information

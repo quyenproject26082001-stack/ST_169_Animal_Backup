@@ -38,8 +38,18 @@ import java.io.File
 import kotlin.collections.forEachIndexed
 
 class DataViewModel() : ViewModel() {
-    private val _allData = MutableStateFlow<ArrayList<CustomizeModel>>(arrayListOf())
-    val allData: StateFlow<ArrayList<CustomizeModel>> = _allData.asStateFlow()
+    companion object {
+        // Shared across all activity-scoped instances — loaded only once per process lifetime
+        private val _sharedData = MutableStateFlow<ArrayList<CustomizeModel>>(arrayListOf())
+    }
+
+    private val _allData get() = _sharedData
+    val allData: StateFlow<ArrayList<CustomizeModel>> = _sharedData.asStateFlow()
+
+    // Per-instance, not shared — used only for type-filtered views (ChooseCharacterActivity)
+    private val _filteredData = MutableStateFlow<ArrayList<CustomizeModel>>(arrayListOf())
+    val filteredData: StateFlow<ArrayList<CustomizeModel>> = _filteredData.asStateFlow()
+
     private val _getDataAPI = MutableLiveData<List<PartAPI>>()
     val getDataAPI: LiveData<List<PartAPI>> get() = _getDataAPI
 
@@ -114,6 +124,26 @@ class DataViewModel() : ViewModel() {
         }
     }
 
+    fun ensureDataFromCache(context: Context) {
+        if (_allData.value.isEmpty()) {
+            viewModelScope.launch {
+                val list = withContext(Dispatchers.IO) {
+                    if (!MediaHelper.checkFileInternal(context, ValueKey.DATA_FILE_INTERNAL)) {
+                        AssetHelper.getDataFromAsset(context)
+                    }
+                    val totalData = MediaHelper.readListFromFile<CustomizeModel>(context, ValueKey.DATA_FILE_INTERNAL)
+                        .toCollection(ArrayList())
+                    val dataApi = MediaHelper.readListFromFile<CustomizeModel>(context, ValueKey.DATA_FILE_API_INTERNAL)
+                        ?: arrayListOf()
+                    totalData.addAll(dataApi)
+                    totalData.sortBy { it.level }
+                    totalData
+                }
+                _allData.value = list
+            }
+        }
+    }
+
     fun loadDataByType(context: Context, dataType: Int) {
         viewModelScope.launch {
             val list = withContext(Dispatchers.IO) {
@@ -137,7 +167,7 @@ class DataViewModel() : ViewModel() {
                 combined.sortBy { it.level }
                 combined
             }
-            _allData.value = list
+            _filteredData.value = list
         }
     }
 

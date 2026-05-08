@@ -79,9 +79,14 @@ class CustomizeCharacterActivity : BaseActivity<ActivityCustomizeBinding>() {
     }
 
     override fun dataObservable() {
+        val dataType = intent.getIntExtra(IntentKey.DATA_TYPE_KEY, IntentKey.DATA_TYPE_DEFAULT)
         lifecycleScope.launch {
             launch {
-                dataViewModel.allData.collect { list ->
+                val flow = if (dataType != IntentKey.DATA_TYPE_DEFAULT)
+                    dataViewModel.filteredData
+                else
+                    dataViewModel.allData
+                flow.collect { list ->
                     if (list.isNotEmpty()) {
                         viewModel.positionSelected = intent.getIntExtra(IntentKey.INTENT_KEY, 0)
                         viewModel.statusFrom =

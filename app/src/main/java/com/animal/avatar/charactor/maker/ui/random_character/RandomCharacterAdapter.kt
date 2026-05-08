@@ -4,8 +4,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
-import android.util.Log
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.animal.avatar.charactor.maker.core.base.BaseAdapter
 import com.animal.avatar.charactor.maker.core.utils.key.ValueKey
 import com.animal.avatar.charactor.maker.data.model.custom.SuggestionModel
@@ -16,6 +16,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import androidx.core.graphics.createBitmap
 import com.bumptech.glide.load.DataSource
@@ -34,23 +36,14 @@ class RandomCharacterAdapter(val context: Context) :
     BaseAdapter<SuggestionModel, ItemRandomCharacterBinding>(ItemRandomCharacterBinding::inflate) {
     var onItemClick: ((SuggestionModel) -> Unit) = {}
 
-    // ✅ Map to track active jobs per position to cancel them when recycled
-    private val activeJobs = mutableMapOf<Int, kotlinx.coroutines.Job>()
+    private val activeJobs = mutableMapOf<ItemRandomCharacterBinding, kotlinx.coroutines.Job>()
+    private val compositeSemaphore = Semaphore(2)
 
     override fun onBind(binding: ItemRandomCharacterBinding, item: SuggestionModel, position: Int) {
         binding.apply {
-            Log.d("RandomAdapter", "========================================")
-            Log.d("RandomAdapter", "onBind position: $position")
-            Log.d("RandomAdapter", "Avatar path: ${item.avatarPath}")
-            Log.d("RandomAdapter", "Selected paths count: ${item.pathSelectedList.size}")
-            Log.d("RandomAdapter", "Internal random path: ${item.pathInternalRandom}")
+            activeJobs[binding]?.cancel()
 
-            // ✅ Cancel any existing job for this position
-            activeJobs[position]?.cancel()
-
-            // ✅ OPTIMIZATION: If already processed, just load the cached image
             if (item.pathInternalRandom.isNotEmpty()) {
-                Log.d("RandomAdapter", "⚡ CACHED - Loading from: ${item.pathInternalRandom}")
                 sflShimmer.gone()
                 sflShimmer.stopShimmer()
                 imvImage.visible()
@@ -68,90 +61,83 @@ class RandomCharacterAdapter(val context: Context) :
 
             val listBitmap: ArrayList<Bitmap> = arrayListOf()
             val handleExceptionCoroutine = CoroutineExceptionHandler { _, throwable ->
-                Log.e("RandomAdapter", "✗ ERROR at position $position: ${throwable.message}")
                 throwable.printStackTrace()
             }
-            // ✅ Store the job so we can cancel it if the view is recycled
+
             val job = CoroutineScope(SupervisorJob() + Dispatchers.IO + handleExceptionCoroutine).launch {
-                val job1 = async {
-                    Log.d("RandomAdapter", "Loading first layer: ${item.pathSelectedList.first()}")
-                    val bitmapDefault = Glide.with(context).asBitmap().load(item.pathSelectedList.first()).submit().get()
-                    width = bitmapDefault.width/2 ?: ValueKey.WIDTH_BITMAP
-                    height = bitmapDefault.height/2 ?: ValueKey.HEIGHT_BITMAP
-                    Log.d("RandomAdapter", "Bitmap size: ${width}x${height}")
+                compositeSemaphore.withPermit {
+                    val job1 = async {
+                        val bitmapDefault = Glide.with(context).asBitmap()
+                            .load(item.pathSelectedList.first())
+                            .diskCacheStrategy(DiskCacheStrategy.DATA)
+                            .submit().get()
+                        width = (bitmapDefault.width / 2).coerceAtMost(256)
+                        height = (bitmapDefault.height / 2).coerceAtMost(256)
+                        bitmapDefault.recycle()
 
-                    if (items[position].pathInternalRandom == ""){
-                        Log.d("RandomAdapter", "Loading ${item.pathSelectedList.size} layers...")
-                        item.pathSelectedList.forEachIndexed { idx, path ->
-                            Log.d("RandomAdapter", "Loading layer $idx: $path")
-                            listBitmap.add(Glide.with(context).asBitmap().load(path).submit(width, height).get())
-                        }
-                        Log.d("RandomAdapter", "✓ All layers loaded successfully")
-                    }
-                    return@async true
-                }
-
-                withContext(Dispatchers.Main) {
-                    if (job1.await()) {
-                        if (items[position].pathInternalRandom == ""){
-                            Log.d("RandomAdapter", "Creating combined bitmap...")
-                            val combinedBitmap = createBitmap(width, height)
-                            val canvas = Canvas(combinedBitmap)
-
-                            for (i in 0 until listBitmap.size) {
-                                val bitmap = listBitmap[i]
-                                val left = (width - bitmap.width) / 2f
-                                val top = (height - bitmap.height) / 2f
-                                canvas.drawBitmap(bitmap, left, top, null)
+                        if (item.pathInternalRandom == "") {
+                            item.pathSelectedList.forEach { path ->
+                                listBitmap.add(
+                                    Glide.with(context).asBitmap().load(path)
+                                        .diskCacheStrategy(DiskCacheStrategy.DATA)
+                                        .submit(width, height).get()
+                                )
                             }
+                        }
+                        return@async true
+                    }
 
-                            MediaHelper.saveBitmapToInternalStorage(context, ValueKey.RANDOM_TEMP_ALBUM, combinedBitmap).collect { state ->
-                                when(state){
-                                    is SaveState.Loading -> {
-                                        Log.d("RandomAdapter", "Saving bitmap to internal storage...")
-                                    }
-                                    is SaveState.Error -> {
-                                        Log.e("RandomAdapter", "✗ Failed to save bitmap: ${state.exception.message}")
-                                    }
-                                    is SaveState.Success -> {
-                                        items[position].pathInternalRandom = state.path
-                                        Log.d("RandomAdapter", "✓ Bitmap saved: ${state.path}")
+                    withContext(Dispatchers.Main) {
+                        if (job1.await()) {
+                            if (item.pathInternalRandom == "") {
+                                val combinedBitmap = createBitmap(width, height)
+                                val canvas = Canvas(combinedBitmap)
+
+                                for (i in 0 until listBitmap.size) {
+                                    val bitmap = listBitmap[i]
+                                    val left = (width - bitmap.width) / 2f
+                                    val top = (height - bitmap.height) / 2f
+                                    canvas.drawBitmap(bitmap, left, top, null)
+                                    bitmap.recycle()
+                                }
+                                listBitmap.clear()
+
+                                MediaHelper.saveBitmapToInternalStorage(context, ValueKey.RANDOM_TEMP_ALBUM, combinedBitmap).collect { state ->
+                                    when (state) {
+                                        is SaveState.Loading -> {}
+                                        is SaveState.Error -> {}
+                                        is SaveState.Success -> {
+                                            item.pathInternalRandom = state.path
+                                        }
                                     }
                                 }
+                                combinedBitmap.recycle()
                             }
+
+                            Glide.with(root).load(item.pathInternalRandom).listener(object : RequestListener<Drawable> {
+                                override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable?>, isFirstResource: Boolean): Boolean {
+                                    sflShimmer.stopShimmer()
+                                    sflShimmer.gone()
+                                    return false
+                                }
+
+                                override fun onResourceReady(resource: Drawable, model: Any, target: Target<Drawable?>?, dataSource: DataSource, isFirstResource: Boolean): Boolean {
+                                    sflShimmer.stopShimmer()
+                                    sflShimmer.gone()
+                                    imvImage.visible()
+                                    return false
+                                }
+                            }).into(imvImage)
                         }
-
-
-                        Log.d("RandomAdapter", "Loading final image from: ${items[position].pathInternalRandom}")
-                        Glide.with(root).load(items[position].pathInternalRandom).listener(object : RequestListener<Drawable> {
-                            override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable?>, isFirstResource: Boolean): Boolean {
-                                Log.e("RandomAdapter", "✗ Glide load FAILED at position $position: ${e?.message}")
-                                e?.logRootCauses("RandomAdapter")
-                                sflShimmer.stopShimmer()
-                                sflShimmer.gone()
-                                return false
-                            }
-
-                            override fun onResourceReady(resource: Drawable, model: Any, target: Target<Drawable?>?, dataSource: DataSource, isFirstResource: Boolean): Boolean {
-                                Log.d("RandomAdapter", "✓ Image loaded successfully at position $position")
-                                sflShimmer.stopShimmer()
-                                sflShimmer.gone()
-                                imvImage.visible()
-                                return false
-                            }
-                        }).into(imvImage)
                     }
                 }
             }
 
-            // ✅ Save the job reference
-            activeJobs[position] = job
-
+            activeJobs[binding] = job
             root.tap { onItemClick.invoke(item) }
         }
     }
 
-    // ✅ Clean up when adapter is destroyed
     fun cancelAllJobs() {
         activeJobs.values.forEach { it.cancel() }
         activeJobs.clear()

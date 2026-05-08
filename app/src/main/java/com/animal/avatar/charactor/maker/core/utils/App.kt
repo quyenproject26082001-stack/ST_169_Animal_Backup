@@ -32,14 +32,14 @@ class App : AdsApplication() {
         return true
     }
 
-    override fun onTrimMemory(level: Int) {
-        super.onTrimMemory(level)
-        when (level) {
-            ComponentCallbacks2.TRIM_MEMORY_MODERATE,
-            ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW,
-            ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL -> {
-                Glide.get(this).clearMemory()
-            }
-        }
-    }
+//    override fun onTrimMemory(level: Int) {
+//        super.onTrimMemory(level)
+//        when (level) {
+//            ComponentCallbacks2.TRIM_MEMORY_MODERATE,
+//            ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW,
+//            ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL -> {
+//                Glide.get(this).clearMemory()
+//            }
+//        }
+//    }
 }
