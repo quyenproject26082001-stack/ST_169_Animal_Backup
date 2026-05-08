@@ -40,36 +40,23 @@ class MyAvatarViewModel : ViewModel() {
     var editModel = SuggestionModel()
 
     fun loadMyAvatar(context: Context) {
-        android.util.Log.d("MyAvatarViewModel", "📂 loadMyAvatar() START")
-        android.util.Log.d("MyAvatarViewModel", "Thread: ${Thread.currentThread().name}")
-        android.util.Log.d("MyAvatarViewModel", "Context: ${context.javaClass.simpleName}")
-
         try {
-            val editList = MediaHelper.readListFromFile<SuggestionModel>(context, ValueKey.EDIT_FILE_INTERNAL)
-            android.util.Log.d("MyAvatarViewModel", "✅ Loaded ${editList.size} items from EDIT_FILE_INTERNAL")
-
-            editList.forEachIndexed { index, suggestion ->
-                android.util.Log.d("MyAvatarViewModel", "  [$index] path: ${suggestion.pathInternalEdit}")
-                android.util.Log.d("MyAvatarViewModel", "  [$index] avatarPath: ${suggestion.avatarPath}")
-                // Check if file exists
-                val file = java.io.File(suggestion.pathInternalEdit)
-                val exists = file.exists()
-                val size = if (exists) file.length() else 0
-                android.util.Log.d("MyAvatarViewModel", "  [$index] File exists: $exists, Size: $size bytes")
+            val pathList = MediaHelper.readListFromFile<String>(context, ValueKey.MY_CREATION_PATHS_FILE)
+            if (pathList.isEmpty()) {
+                val editList = MediaHelper.readListFromFile<SuggestionModel>(context, ValueKey.EDIT_FILE_INTERNAL)
+                if (editList.isNotEmpty()) {
+                    val paths = editList.map { it.pathInternalEdit }
+                    MediaHelper.writeListToFile(context, ValueKey.MY_CREATION_PATHS_FILE, paths)
+                    _myAvatarList.value = paths.map { MyAlbumModel(it) }.toCollection(ArrayList())
+                    checkLastItem()
+                    return
+                }
             }
-
-            val albumList = editList.map { MyAlbumModel(it.pathInternalEdit) }.toCollection(ArrayList())
-            _myAvatarList.value = albumList
-
-            android.util.Log.d("MyAvatarViewModel", "✅ Updated myAvatarList with ${albumList.size} items")
-            android.util.Log.d("MyAvatarViewModel", "Current myAvatarList size: ${_myAvatarList.value.size}")
+            _myAvatarList.value = pathList.map { MyAlbumModel(it) }.toCollection(ArrayList())
         } catch (e: Exception) {
-            android.util.Log.e("MyAvatarViewModel", "❌ ERROR loading avatars: ${e.message}", e)
             _myAvatarList.value = arrayListOf()
         }
-
         checkLastItem()
-        android.util.Log.d("MyAvatarViewModel", "📂 loadMyAvatar() END")
     }
 
     private fun checkLastItem() {
@@ -90,6 +77,7 @@ class MyAvatarViewModel : ViewModel() {
             removeAll(editDeleteList)
         }
         MediaHelper.writeListToFile(context, ValueKey.EDIT_FILE_INTERNAL, newOriginList)
+        MediaHelper.writeListToFile(context, ValueKey.MY_CREATION_PATHS_FILE, newOriginList.map { it.pathInternalEdit })
 
         // Update StateFlow properly (important!)
         val newAvatarList = ArrayList(_myAvatarList.value).apply {

@@ -177,9 +177,9 @@ object MediaHelper {
 
     inline fun <reified T> writeListToFile(context: Context, fileName: String, list: List<T>) {
         try {
-            val json = Gson().toJson(list)
-            context.openFileOutput(fileName, Context.MODE_PRIVATE).use { output ->
-                output.write(json.toByteArray())
+            val type = object : TypeToken<List<T>>() {}.type
+            context.openFileOutput(fileName, Context.MODE_PRIVATE).bufferedWriter().use { writer ->
+                Gson().toJson(list, type, writer)
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -188,9 +188,10 @@ object MediaHelper {
 
     inline fun <reified T> readListFromFile(context: Context, fileName: String): List<T> {
         return try {
-            val json = context.openFileInput(fileName).bufferedReader().use { it.readText() }
             val type = object : TypeToken<List<T>>() {}.type
-            Gson().fromJson(json, type) ?: emptyList()
+            context.openFileInput(fileName).bufferedReader().use { reader ->
+                Gson().fromJson<List<T>>(reader, type) ?: emptyList()
+            }
         } catch (e: FileNotFoundException) {
             emptyList()
         } catch (e: Exception) {

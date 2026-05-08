@@ -10,12 +10,14 @@ import com.lvt.ads.callback.NativeCallback
 import com.lvt.ads.event.AdmobEvent
 import com.lvt.ads.util.Admob
 import com.animal.avatar.charactor.maker.core.helper.UnitHelper
+import java.lang.ref.WeakReference
 
 fun Activity.showInterAll(onFinishInter: () -> Unit) {
+    val weakRef = WeakReference(this)
     Admob.getInstance().showInterAll(this, object : InterCallback() {
         override fun onNextAction() {
             super.onNextAction()
-            onFinishInter.invoke()
+            if (weakRef.get() != null) onFinishInter.invoke()
         }
     })
 }
@@ -30,12 +32,13 @@ fun Activity.showInterAll(onFinishInter: () -> Unit) {
 //}
 
 fun Activity.showInterAllWait(onFinishInter: () -> Unit) {
+    val weakRef = WeakReference(this)
     Admob.getInstance().setOpenActivityAfterShowInterAds(false)
     Admob.getInstance().showInterAll(this, object : InterCallback() {
         override fun onNextAction() {
             super.onNextAction()
             Admob.getInstance().setOpenActivityAfterShowInterAds(true)
-            onFinishInter.invoke()
+            if (weakRef.get() != null) onFinishInter.invoke()
         }
     })
 }

@@ -5,7 +5,7 @@ object ValueKey {
     const val DOWNLOAD_ALBUM_BACKGROUND = "Image Background"
     const val RANDOM_TEMP_ALBUM = "RANDOM_TEMP_ALBUM"
 
-    const val RANDOM_QUANTITY = 20
+    const val RANDOM_QUANTITY = 4
     const val HEIGHT_BITMAP = 512
     const val WIDTH_BITMAP = 512
     const val POSITION_API = 1
@@ -14,6 +14,7 @@ object ValueKey {
     const val DATA_FILE_API_INTERNAL = "data_api_json.txt"
     const val SUGGESTION_FILE_INTERNAL = "suggestion_json.txt"
     const val EDIT_FILE_INTERNAL = "data_edit.json"
+    const val MY_CREATION_PATHS_FILE = "data_edit_paths.json"
 
     const val TYPE_VIEW = 0
     const val TYPE_SUCCESS = 1

@@ -50,6 +50,7 @@ class ViewViewModel : ViewModel() {
                 originList.remove(editDelete)
 
                 MediaHelper.writeListToFile(context, ValueKey.EDIT_FILE_INTERNAL, originList)
+                MediaHelper.writeListToFile(context, ValueKey.MY_CREATION_PATHS_FILE, originList.map { it.pathInternalEdit })
 
                 emit(HandleState.SUCCESS)
             }catch (e: Exception){

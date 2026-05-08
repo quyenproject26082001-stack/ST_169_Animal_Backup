@@ -65,6 +65,11 @@ class MyCreationActivity : WhatsappSharingActivity<ActivityAlbumBinding>() {
         fun getInstance(): MyCreationActivity? = instanceRef?.get()
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        instanceRef = null
+    }
+
     private val viewModel: MyCreationViewModel by viewModels()
     private val permissionViewModel: PermissionViewModel by viewModels()
 
