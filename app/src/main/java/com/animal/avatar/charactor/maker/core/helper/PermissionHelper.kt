@@ -7,12 +7,10 @@ object PermissionHelper {
 
     val storagePermission = when {
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ->
-            emptyArray() // Android 10+: MediaStore API không cần quyền
+            emptyArray() // Android 13+: không cần quyền storage
 
         else -> arrayOf(
-            Manifest.permission.WRITE_EXTERNAL_STORAGE,
-            Manifest.permission.READ_EXTERNAL_STORAGE
-        )
+            Manifest.permission.WRITE_EXTERNAL_STORAGE)
     }
 
     val notificationPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -21,5 +19,4 @@ object PermissionHelper {
         emptyArray()
     }
 
-    val cameraPermission = arrayOf(Manifest.permission.CAMERA)
 }
