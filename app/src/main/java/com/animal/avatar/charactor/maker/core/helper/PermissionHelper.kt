@@ -7,7 +7,7 @@ object PermissionHelper {
 
     val storagePermission = when {
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ->
-            arrayOf(Manifest.permission.READ_MEDIA_IMAGES)
+            emptyArray() // Android 10+: MediaStore API không cần quyền
 
         else -> arrayOf(
             Manifest.permission.WRITE_EXTERNAL_STORAGE,
