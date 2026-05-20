@@ -14,7 +14,9 @@ import com.animal.avatar.charactor.maker.core.extensions.select
 import com.animal.avatar.charactor.maker.core.extensions.setImageActionBar
 import com.animal.avatar.charactor.maker.core.extensions.showInterAll
 import com.animal.avatar.charactor.maker.core.extensions.startIntentRightToLeft
+import com.animal.avatar.charactor.maker.core.helper.InternetHelper
 import com.animal.avatar.charactor.maker.core.helper.LanguageHelper
+import com.animal.avatar.charactor.maker.dialog.YesNoDialog
 import com.animal.avatar.charactor.maker.core.helper.MediaHelper
 import com.animal.avatar.charactor.maker.core.utils.key.ValueKey
 import com.animal.avatar.charactor.maker.core.utils.state.RateState
@@ -55,7 +57,13 @@ class HomeActivity : BaseActivity<ActivityHomeBinding>() {
             actionBar.btnActionBarRight.tap(2000) { startIntentRightToLeft(SettingsActivity::class.java) }
             btnCreate.tap(2000) { startIntentRightToLeft(MakerCharacterActivity::class.java) }
             btnMyAlbum.tap(2000) { showInterAll { startIntentRightToLeft(MyCreationActivity::class.java) } }
-            btnQuickMaker.tap(2000) { showInterAll{startIntentRightToLeft(RandomCharacterActivity::class.java)} }
+            btnQuickMaker.tap(2000) {
+                if (!InternetHelper.checkInternet(this@HomeActivity)) {
+                    YesNoDialog(this@HomeActivity, R.string.error, R.string.please_check_your_internet, isError = true).show()
+                    return@tap
+                }
+                showInterAll { startIntentRightToLeft(RandomCharacterActivity::class.java) }
+            }
         }
     }
 

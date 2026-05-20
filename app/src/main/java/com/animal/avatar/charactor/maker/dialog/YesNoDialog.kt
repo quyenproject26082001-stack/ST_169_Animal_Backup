@@ -39,7 +39,10 @@ class YesNoDialog(
     override fun initAction() {
         binding.apply {
             btnNo.tap { onNoClick.invoke() }
-            btnYes.tap { onYesClick.invoke() }
+            btnYes.tap {
+                onYesClick.invoke()
+                if (isError) dismiss()
+            }
             flOutSide.tap { onDismissClick.invoke() }
         }
     }

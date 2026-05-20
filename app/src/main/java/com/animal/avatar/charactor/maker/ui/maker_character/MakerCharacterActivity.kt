@@ -11,8 +11,10 @@ import com.animal.avatar.charactor.maker.core.extensions.setTextActionBar
 import com.animal.avatar.charactor.maker.core.extensions.showInterAll
 import com.animal.avatar.charactor.maker.core.extensions.startIntentRightToLeft
 import com.animal.avatar.charactor.maker.core.extensions.tap
+import com.animal.avatar.charactor.maker.core.helper.InternetHelper
 import com.animal.avatar.charactor.maker.core.utils.key.IntentKey
 import com.animal.avatar.charactor.maker.databinding.ActivityMakerCharacterBinding
+import com.animal.avatar.charactor.maker.dialog.YesNoDialog
 import com.animal.avatar.charactor.maker.ui.choose_character.ChooseCharacterActivity
 import com.lvt.ads.util.Admob
 
@@ -24,23 +26,32 @@ class MakerCharacterActivity : BaseActivity<ActivityMakerCharacterBinding>() {
 
     override fun initView() {}
 
+    private fun showNoInternetDialog() {
+        YesNoDialog(this, R.string.error, R.string.please_check_your_internet, isError = true).show()
+    }
+
     override fun viewListener() {
         binding.apply {
             actionBar.btnActionBarLeft.tap { showInterAll { handleBackLeftToRight() } }
             btnCatMaker.tap(800) {
-                showInterAll {  startIntentRightToLeft(ChooseCharacterActivity::class.java, IntentKey.DATA_TYPE_KEY, IntentKey.DATA_TYPE_CAT)}
+                if (!InternetHelper.checkInternet(this@MakerCharacterActivity)) { showNoInternetDialog(); return@tap }
+                showInterAll { startIntentRightToLeft(ChooseCharacterActivity::class.java, IntentKey.DATA_TYPE_KEY, IntentKey.DATA_TYPE_CAT) }
             }
             btnDragonMaker.tap(800) {
-                showInterAll {  startIntentRightToLeft(ChooseCharacterActivity::class.java, IntentKey.DATA_TYPE_KEY, IntentKey.DATA_TYPE_DRAGON)}
+                if (!InternetHelper.checkInternet(this@MakerCharacterActivity)) { showNoInternetDialog(); return@tap }
+                showInterAll { startIntentRightToLeft(ChooseCharacterActivity::class.java, IntentKey.DATA_TYPE_KEY, IntentKey.DATA_TYPE_DRAGON) }
             }
             btnDogMaker.tap(800) {
-                showInterAll {  startIntentRightToLeft(ChooseCharacterActivity::class.java, IntentKey.DATA_TYPE_KEY, IntentKey.DATA_TYPE_DOG)}
+                if (!InternetHelper.checkInternet(this@MakerCharacterActivity)) { showNoInternetDialog(); return@tap }
+                showInterAll { startIntentRightToLeft(ChooseCharacterActivity::class.java, IntentKey.DATA_TYPE_KEY, IntentKey.DATA_TYPE_DOG) }
             }
             btnPonyMaker.tap(800) {
-                showInterAll {  startIntentRightToLeft(ChooseCharacterActivity::class.java, IntentKey.DATA_TYPE_KEY, IntentKey.DATA_TYPE_PONY)}
+                if (!InternetHelper.checkInternet(this@MakerCharacterActivity)) { showNoInternetDialog(); return@tap }
+                showInterAll { startIntentRightToLeft(ChooseCharacterActivity::class.java, IntentKey.DATA_TYPE_KEY, IntentKey.DATA_TYPE_PONY) }
             }
             btnAnimalMaker.tap(800) {
-                showInterAll {  startIntentRightToLeft(ChooseCharacterActivity::class.java, IntentKey.DATA_TYPE_KEY, IntentKey.DATA_TYPE_ANIMAL)}
+                if (!InternetHelper.checkInternet(this@MakerCharacterActivity)) { showNoInternetDialog(); return@tap }
+                showInterAll { startIntentRightToLeft(ChooseCharacterActivity::class.java, IntentKey.DATA_TYPE_KEY, IntentKey.DATA_TYPE_ANIMAL) }
             }
         }
     }

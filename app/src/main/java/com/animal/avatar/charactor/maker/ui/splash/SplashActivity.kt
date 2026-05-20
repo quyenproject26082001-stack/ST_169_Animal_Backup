@@ -15,12 +15,14 @@ import com.animal.avatar.charactor.maker.databinding.ActivitySplashBinding
 import com.animal.avatar.charactor.maker.ui.intro.IntroActivity
 import com.animal.avatar.charactor.maker.ui.language.LanguageActivity
 import com.animal.avatar.charactor.maker.ui.home.DataViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class SplashActivity : BaseActivity<ActivitySplashBinding>() {
     var intentActivity: Intent? = null
     private val dataViewModel: DataViewModel by viewModels()
     var interCallBack: InterCallback? = null
+    private var hasNavigated = false
 
     override fun setViewBinding(): ActivitySplashBinding {
         return ActivitySplashBinding.inflate(LayoutInflater.from(this))
@@ -56,22 +58,30 @@ class SplashActivity : BaseActivity<ActivitySplashBinding>() {
         dataViewModel.ensureData(this)
     }
 
+    private fun proceedToNextScreen() {
+        if (hasNavigated) return
+        hasNavigated = true
+        Admob.getInstance().loadSplashInterAds(
+            this@SplashActivity,
+            getString(R.string.inter_splash),
+            30000,
+            2000,
+            interCallBack
+        )
+    }
+
     override fun dataObservable() {
         lifecycleScope.launch {
+            launch {
+                delay(10_000)
+                proceedToNextScreen()
+            }
             dataViewModel.allData.collect { dataList ->
-                if (dataList.isNotEmpty()){
+                if (dataList.isNotEmpty()) {
                     dataViewModel.getAllParts(this@SplashActivity).collect { dataAPI ->
-                        when(dataAPI){
+                        when (dataAPI) {
                             HandleState.LOADING -> {}
-                            else -> {
-                                Admob.getInstance().loadSplashInterAds(
-                                    this@SplashActivity,
-                                    getString(R.string.inter_splash),
-                                    30000,
-                                    2000,
-                                    interCallBack
-                                )
-                            }
+                            else -> proceedToNextScreen()
                         }
                     }
                 }

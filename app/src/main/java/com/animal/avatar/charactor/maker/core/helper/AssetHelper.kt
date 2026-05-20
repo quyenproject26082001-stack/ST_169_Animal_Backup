@@ -19,16 +19,28 @@ import java.io.FileOutputStream
 object AssetHelper {
     // Read sub folder
     fun getSubfoldersAsset(context: Context, path: String): ArrayList<String> {
-        val allData = context.assets.list(path)
-        val sortedData = MediaHelper.sortAsset(allData)?.map { "${AssetsKey.ASSET_MANAGER}/$path/$it" }?.toCollection(ArrayList())
-        return sortedData ?: arrayListOf()
+        return try {
+            val allData = context.assets.list(path)
+            val sortedData = MediaHelper.sortAsset(allData)?.map { "${AssetsKey.ASSET_MANAGER}/$path/$it" }?.toCollection(ArrayList())
+            sortedData ?: arrayListOf()
+        } catch (e: Exception) {
+            // Khi asset local đã bị xóa khỏi APK thì chỉ trả list rỗng, không crash.
+            Log.e("AssetHelper", "Failed to read asset folder: $path", e)
+            arrayListOf()
+        }
     }
 
     // Read sub folder
     fun getSubfoldersNotDomainAsset(context: Context, path: String): ArrayList<String> {
-        val allData = context.assets.list(path)
-        val sortedData = MediaHelper.sortAsset(allData)?.map { "${AssetsKey.DATA}/$it" }?.toCollection(ArrayList())
-        return sortedData ?: arrayListOf()
+        return try {
+            val allData = context.assets.list(path)
+            val sortedData = MediaHelper.sortAsset(allData)?.map { "${AssetsKey.DATA}/$it" }?.toCollection(ArrayList())
+            sortedData ?: arrayListOf()
+        } catch (e: Exception) {
+            // Giữ behavior an toàn tương tự khi local asset không còn tồn tại.
+            Log.e("AssetHelper", "Failed to read asset folder: $path", e)
+            arrayListOf()
+        }
     }
 
     // Read file txt -> json -> T

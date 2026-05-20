@@ -25,6 +25,7 @@ import com.animal.avatar.charactor.maker.core.helper.InternetHelper
 import com.animal.avatar.charactor.maker.core.utils.key.IntentKey
 import com.animal.avatar.charactor.maker.core.utils.state.HandleState
 import com.animal.avatar.charactor.maker.databinding.ActivityChooseCharacterBinding
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 class ChooseCharacterActivity : BaseActivity<ActivityChooseCharacterBinding>() {
@@ -33,6 +34,7 @@ class ChooseCharacterActivity : BaseActivity<ActivityChooseCharacterBinding>() {
     private val chooseCharacterAdapter by lazy { ChooseCharacterAdapter() }
     private var hasCheckedInternet = false
     private var currentDataType = IntentKey.DATA_TYPE_DEFAULT
+    private var retryJob: Job? = null
 
     override fun setViewBinding(): ActivityChooseCharacterBinding {
         return ActivityChooseCharacterBinding.inflate(LayoutInflater.from(this))
@@ -210,6 +212,28 @@ class ChooseCharacterActivity : BaseActivity<ActivityChooseCharacterBinding>() {
             binding.nativeAds,
             R.layout.ads_native_banner
         )
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val currentData = if (currentDataType != IntentKey.DATA_TYPE_DEFAULT)
+            dataViewModel.filteredData.value
+        else
+            dataViewModel.allData.value
+
+        if (currentData.isEmpty() && InternetHelper.checkInternet(this) && retryJob?.isActive != true) {
+            retryJob = lifecycleScope.launch {
+                showLoading()
+                dataViewModel.getAllParts(this@ChooseCharacterActivity).collect { state ->
+                    if (state != HandleState.LOADING) {
+                        if (currentDataType != IntentKey.DATA_TYPE_DEFAULT)
+                            dataViewModel.loadDataByType(this@ChooseCharacterActivity, currentDataType)
+                        else
+                            dataViewModel.saveAndReadData(this@ChooseCharacterActivity)
+                    }
+                }
+            }
+        }
     }
 
     override fun onRestart() {

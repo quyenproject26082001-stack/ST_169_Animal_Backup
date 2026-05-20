@@ -58,6 +58,7 @@ import com.animal.avatar.charactor.maker.core.utils.state.SaveState
 import com.animal.avatar.charactor.maker.data.model.draw.Draw
 import com.animal.avatar.charactor.maker.data.model.draw.DrawableDraw
 import com.animal.avatar.charactor.maker.databinding.ActivityAddCharacterBinding
+import com.animal.avatar.charactor.maker.core.helper.InternetHelper
 import com.animal.avatar.charactor.maker.dialog.ChooseColorDialog
 import com.animal.avatar.charactor.maker.dialog.DialogSpeech
 import com.animal.avatar.charactor.maker.dialog.YesNoDialog
@@ -357,7 +358,13 @@ class AddCharacterActivity : BaseActivity<ActivityAddCharacterBinding>() {
 
             backgroundImageAdapter.apply {
                 onAddImageClick = { checkStoragePermission() }
-                onBackgroundImageClick = { path, position -> handleSetBackgroundImage(path, position) }
+                onBackgroundImageClick = { path, position ->
+                    if (path.startsWith("http") && !backgroundImageAdapter.isLoaded(path) && !InternetHelper.checkInternet(this@AddCharacterActivity)) {
+                        YesNoDialog(this@AddCharacterActivity, R.string.error, R.string.please_check_your_internet, isError = true).show()
+                    } else {
+                        handleSetBackgroundImage(path, position)
+                    }
+                }
             }
 
             backgroundColorAdapter.apply {
@@ -365,7 +372,13 @@ class AddCharacterActivity : BaseActivity<ActivityAddCharacterBinding>() {
                 onBackgroundColorClick = { color, position -> handleSetBackgroundColor(color, position) }
             }
 
-            stickerAdapter.onItemClick = { path -> addDrawable(path) }
+            stickerAdapter.onItemClick = { path ->
+                if (path.startsWith("http") && !stickerAdapter.isLoaded(path) && !InternetHelper.checkInternet(this@AddCharacterActivity)) {
+                    YesNoDialog(this@AddCharacterActivity, R.string.error, R.string.please_check_your_internet, isError = true).show()
+                } else {
+                    addDrawable(path)
+                }
+            }
 
             speechAdapter.onItemClick = { path -> handleSpeech(path) }
 
@@ -475,12 +488,18 @@ class AddCharacterActivity : BaseActivity<ActivityAddCharacterBinding>() {
         bitmapText: Bitmap? = null) {
         lifecycleScope.launch(Dispatchers.IO) {
             val targetSize = 512
-            val bitmapDefault = if (bitmapText == null)
-                Glide.with(this@AddCharacterActivity)
-                .load(path)
-                .submit(targetSize,targetSize)
-                .get()
-                .toBitmap() else bitmapText
+            val bitmapDefault = if (bitmapText == null) {
+                try {
+                    Glide.with(this@AddCharacterActivity)
+                        .load(path)
+                        .submit(targetSize, targetSize)
+                        .get()
+                        .toBitmap()
+                } catch (e: Exception) {
+                    android.util.Log.e("AddCharacter", "Failed to load drawable: $path", e)
+                    return@launch
+                }
+            } else bitmapText
             val drawableEmoji = viewModel.loadDrawableEmoji(this@AddCharacterActivity, bitmapDefault, isCharacter)
 
             withContext(Dispatchers.Main) {

@@ -22,9 +22,11 @@ import com.animal.avatar.charactor.maker.core.extensions.showInterAll
 import com.animal.avatar.charactor.maker.core.extensions.startIntentLeftToRight
 import com.animal.avatar.charactor.maker.core.extensions.startIntentRightToLeft
 import com.animal.avatar.charactor.maker.core.extensions.visible
+import com.animal.avatar.charactor.maker.core.helper.InternetHelper
 import com.animal.avatar.charactor.maker.core.helper.LanguageHelper
 import com.animal.avatar.charactor.maker.core.utils.key.IntentKey
 import com.animal.avatar.charactor.maker.core.utils.key.ValueKey
+import com.animal.avatar.charactor.maker.core.utils.state.HandleState
 import com.animal.avatar.charactor.maker.core.utils.state.SaveState
 import com.animal.avatar.charactor.maker.data.model.custom.ItemNavCustomModel
 import com.animal.avatar.charactor.maker.databinding.ActivityCustomizeBinding
@@ -584,9 +586,7 @@ class CustomizeCharacterActivity : BaseActivity<ActivityCustomizeBinding>() {
                                         setResult(RESULT_OK, data)
 
                                         // ✅ 2) VẪN SANG AddCharacterActivity như bạn muốn
-                                        showInterAll {
-                                            startIntentRightToLeft(AddCharacterActivity::class.java, result.path)
-                                        }
+                                        openAddCharacterIfOnline(result.path)
                                     }
                                 }
 
@@ -598,12 +598,7 @@ class CustomizeCharacterActivity : BaseActivity<ActivityCustomizeBinding>() {
                                     dismissLoading()
                                     withContext(Dispatchers.Main) {
                                         logEvent("click_item_${viewModel.positionSelected}_done")
-                                        showInterAll {
-                                            startIntentRightToLeft(
-                                                AddCharacterActivity::class.java,
-                                                result.path
-                                            )
-                                        }
+                                        openAddCharacterIfOnline(result.path)
                                     }
                                 }
                             }
@@ -611,6 +606,29 @@ class CustomizeCharacterActivity : BaseActivity<ActivityCustomizeBinding>() {
                         }
                     }
                 }
+        }
+    }
+
+    private fun openAddCharacterIfOnline(path: String) {
+        // Chặn từ màn customize vì AddCharacter hiện cần mạng để lấy background remote.
+        InternetHelper.checkInternet(this) { state ->
+            if (state == HandleState.SUCCESS) {
+                showInterAll {
+                    startIntentRightToLeft(AddCharacterActivity::class.java, path)
+                }
+            } else {
+                val dialog = YesNoDialog(
+                    this@CustomizeCharacterActivity,
+                    R.string.notification,
+                    R.string.please_check_your_internet,
+                    isError = true
+                )
+                dialog.show()
+                dialog.onYesClick = {
+                    dialog.dismiss()
+                    hideNavigation(false)
+                }
+            }
         }
     }
 
